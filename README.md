@@ -19,9 +19,9 @@ Your device token that you can find under settings -> authentication of your dev
 You can also find this id where you can find your device token
 
 Example:
-````
+```
 APICredentials credentials(SPACE, DEVICE_TOKEN, DEVICE_ID);
-````
+```
 
 ### Modems
 
@@ -30,7 +30,7 @@ The LTE-m class has one constructor with parameters like Hardware Serial, Softwa
 Modem class is also used for sending the payload.
 
 Example constructor:
-````
+```
 void callback(const char* data);
 
 LTEmModem modem(ltemSerial, debugSerial, credentials, true, callback);
