@@ -176,7 +176,7 @@ void loop() {
   if (millis() - previousMillis > 5000) //send message every 5seconds
   {
     payload.reset();
-    payload.set("hum", count);
+    payload.set("counter", count);
 
     setLight(white);
     if (modem.send(payload))
