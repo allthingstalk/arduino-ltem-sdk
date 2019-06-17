@@ -1,18 +1,44 @@
-# lte-m sdk
-## What's new
-The design of the sdk is completely changed to make it more simple and more logic.  
-So what's new, well almost everything, but not to panic, we will deliver examples to make the transition as easy as possible
+# arduino-LTE-m-sdk
+
+This is a SDK by AllThingsTalk that provides connectivity to their cloud through [LTE-m radios](https://en.wikipedia.org/wiki/LTE-M).
+
+### Version v1.0
+
+What's new?
+
+* Support Binary payloads
+* Support CBOR payloads
+* Support Actuation
+
+## Hardware
+
+This SDK has been tested to work with the following hardware
+
+Chip
+- SARA-R410M (https://www.u-blox.com/en/product/sara-r4-series)
+
+Board
+- Sodaq AFF
+- Sodaq SFF
+
+## Installation
+
+Download the library and import the .zip file directly using the Arduino IDE. (Sketch -> Include library -> Add .ZIP library)
+
+## How to use
 
 ### Credentials
 New classes are introduced, like the credentials classes.  
 
 **API Credentials**
-The API Credential class exists of one constructor with following parameters: space, device token and device id
+The API Credentials are used to connect to our cloud platform (https://maker.allthingstalk.com/)
+This class exists of one constructor with following parameters: space, device token and device id.
 
 *space*
-This parameter is to set-up your space, like 'api.allthingstalk.io'.
+This parameter is to connect to our platform via api, like 'api.allthingstalk.io'.
 
 *device token*
+Every device in your private ground has a device token and device id.
 Your device token that you can find under settings -> authentication of your device
 
 *device id*
@@ -39,11 +65,12 @@ LTEmModem modem(ltemSerial, debugSerial, credentials, true, callback);
 ### Payload
 
 **CBOR Payload**
-This class is almost the same as the previous version, except you have now one function to update assets.
+This class is used to build up your payload for sending to the platform.
+For more information about CBOR see https://cbor.io/
+
 ```
 CBORPayload payload;
 
-payload.map(3);
 payload.set("Battery", 39);
 payload.set("DoorOpen", true);
 payload.set("Temp", 24.5);
@@ -60,7 +87,6 @@ Tag 103 is automatically used when you add a Geolocation object (example GPSCBOR
 ```
 GeoLocation geoLocation(51.4546534, 4.127432, 11.2);
     
-payload.map(1);
 payload.set("loc", geoLocation);
 
 modem.send(payload);
@@ -70,7 +96,6 @@ Tag 120 is used when you set the timestamp (example iotDataPoint)
 ```
 GeoLocation geoLocation(51.4546534, 4.127432, 11.2);
     
-payload.map(4);
 payload.set("bat", 98);
 payload.set("title", "Hello Universe");
 payload.set("loc", geoLocation);
@@ -121,6 +146,12 @@ In the callback method you receive the json string that is sent from the backend
 **Parameters**
 data: json string 
 
+
+# License
+Apache 2.0
+
+# Contributions
+Pull requests and new issues are welcome.
 
 ## How to Install
 Download this library as .zip.
