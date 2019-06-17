@@ -20,16 +20,10 @@
  *
  * WHAT DOES THIS SKETCH DO:
  * -------------------------
- * Will add 1 to an asset 'counter', if the counter exceeds 100 the counter will
- * be reset to 1
+ * When you have created a device on the AllThingsTalk Maker platform (https://maker.allthingstalk.com/)
+ * with an asset 'counter', this asset will be updated every 5 seconds.
+ * If the counter exceeds 100 the counter will be reset to 1
  * 
- * Explanation of the lights:
- * --------------------------
- * Blue: initialization with modem and making connection with backend
- * Magenta: subscribe to message
- * White: sending data
- * Green: blinking (initialisation successful), normal (sending successful)
- * Red: blinking (error initialisation, you have to reset to modem), normal (error in sending)
  */
  
 #include <APICredentials.h>
@@ -41,19 +35,6 @@
 
 #define debugSerial SerialUSB
 #define loraSerial Serial1
-#define powerPin SARA_ENABLE
-#define enablePin -1
-
-enum lightColor {
-  red,
-  green,
-  blue,
-  yellow,
-  magenta,
-  cyan,
-  white,
-  off
-};
 
 void callback(const char* data);
 
@@ -64,139 +45,13 @@ CborPayload payload;
 
 unsigned long previousMillis;
 
-void setLight(lightColor color, bool animate = false, int animateCount = 3)
-{
-  digitalWrite(LED_RED, HIGH);
-  digitalWrite(LED_GREEN, HIGH);
-  digitalWrite(LED_BLUE, HIGH);
-
-  switch (color)
-  {
-    case red:
-      if (animate)
-      {
-        for (int i = 0; i < animateCount; i++)
-        {
-          digitalWrite(LED_RED, LOW);
-          delay(500);
-          digitalWrite(LED_RED, HIGH);
-          delay(500);
-        }
-      }
-      digitalWrite(LED_RED, LOW);
-      break;
-
-    case green:
-      if (animate)
-      {
-        for (int i = 0; i < animateCount; i++)
-        {
-          digitalWrite(LED_GREEN, LOW);
-          delay(500);
-          digitalWrite(LED_GREEN, HIGH);
-          delay(500);
-        }
-      }
-      digitalWrite(LED_GREEN, LOW);
-      break;
-
-    case blue:
-      if (animate)
-      {
-        for (int i = 0; i < animateCount; i++)
-        {
-          digitalWrite(LED_BLUE, LOW);
-          delay(500);
-          digitalWrite(LED_BLUE, HIGH);
-          delay(500);
-        }
-      }
-      digitalWrite(LED_BLUE, LOW);
-      break;  
-
-    case yellow:
-      if (animate)
-      {
-        for (int i = 0; i < animateCount; i++)
-        {
-          digitalWrite(LED_RED, LOW);
-          digitalWrite(LED_GREEN, LOW);
-          delay(500);
-          digitalWrite(LED_RED, HIGH);
-          digitalWrite(LED_GREEN, HIGH);
-          delay(500);
-        }
-      }
-      digitalWrite(LED_RED, LOW);
-      digitalWrite(LED_GREEN, LOW);
-      break;
-
-    case magenta:
-      if (animate)
-      {
-        for (int i = 0; i < animateCount; i++)
-        {
-          digitalWrite(LED_RED, LOW);
-          digitalWrite(LED_BLUE, LOW);
-          delay(500);
-          digitalWrite(LED_RED, HIGH);
-          digitalWrite(LED_BLUE, HIGH);
-          delay(500);
-        }
-      }
-      digitalWrite(LED_RED, LOW);
-      digitalWrite(LED_BLUE, LOW);
-      break;
-
-    case cyan:
-      if (animate)
-      {
-        for (int i = 0; i < animateCount; i++)
-        {
-          digitalWrite(LED_GREEN, LOW);
-          digitalWrite(LED_BLUE, LOW);
-          delay(500);
-          digitalWrite(LED_GREEN, HIGH);
-          digitalWrite(LED_BLUE, HIGH);
-          delay(500);
-        }
-      }
-      digitalWrite(LED_GREEN, LOW);
-      digitalWrite(LED_BLUE, LOW);
-      break;
-
-    case white:
-      if (animate)
-      {
-        for (int i = 0; i < animateCount; i++)
-        {
-          digitalWrite(LED_RED, LOW);
-          digitalWrite(LED_GREEN, LOW);
-          digitalWrite(LED_BLUE, LOW);
-          delay(500);
-          digitalWrite(LED_RED, HIGH);
-          digitalWrite(LED_GREEN, HIGH);
-          digitalWrite(LED_BLUE, HIGH);
-          delay(500);
-        }
-      }
-      digitalWrite(LED_RED, LOW);
-      digitalWrite(LED_GREEN, LOW);
-      digitalWrite(LED_BLUE, LOW);
-      break;
-  }
-}
-
 void setup() {
   debugSerial.begin(115200);
   while (!debugSerial  && millis() < 10000) {}
 
-  initiateLights();
-
-  setLight(blue);
   if (modem.init(APN)) //wake up modem
   {
-    setLight(green, true);
+    debugSerial.print("Modem init succeeded");
   }
   else
   {
@@ -211,21 +66,16 @@ void loop() {
   {
     payload.reset();
     payload.set("counter", count);
-
-    setLight(white);
+    
     if (modem.send(payload))
     {
       count++;
       if (count > 100) count = 1;
-
-      setLight(green);
     }
     else
     {
-      setLight(red);
+      debugSerial.print("Couldn't sent payload");
     }
-    delay(1000);
-    setLight(off);
 
     previousMillis = millis();
   }
@@ -235,21 +85,7 @@ void setSetupError(char* message)
 {
   debugSerial.println(message);
   
-  setLight(red, true, 10);
-  
   exit(0);
-}
-
-void initiateLights()
-{
-  //initiating light pins
-  pinMode(LED_RED, OUTPUT);
-  pinMode(LED_GREEN, OUTPUT);
-  pinMode(LED_BLUE, OUTPUT);
-
-  digitalWrite(LED_RED, HIGH);
-  digitalWrite(LED_GREEN, HIGH);
-  digitalWrite(LED_BLUE, HIGH);
 }
 
 void callback(const char* data)
