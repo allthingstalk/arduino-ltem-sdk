@@ -18,10 +18,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
+ *
+ *
+ *
  * WHAT DOES THIS SKETCH DO:
  * -------------------------
  * When you have created a device on the AllThingsTalk Maker platform (https://maker.allthingstalk.com/)
- * with an asset 'counter', this asset will be updated every 5 seconds.
+ * with an asset 'counter' of kind sensor and type integer, this asset will be updated every 5 seconds.
  * If the counter exceeds 100 the counter will be reset to 1
  * 
  */
@@ -38,8 +41,8 @@
 
 void callback(const char* data);
 
-APICredentials credentials(SPACE, DEVICE_TOKEN, DEVICE_ID);
-LTEmModem modem(ltemSerial, debugSerial, credentials, false, callback);
+APICredentials credentials(SPACE_ENDPOINT, DEVICE_TOKEN, DEVICE_ID);
+LTEmModem modem(ltemSerial, debugSerial, credentials, false, callback);  //false: disables full debug mode
 
 CborPayload payload;
 
@@ -51,7 +54,7 @@ void setup() {
 
   if (modem.init(APN)) //wake up modem
   {
-    debugSerial.print("Modem init succeeded");
+    debugSerial.println("Modem init succeeded");
   }
   else
   {
@@ -66,11 +69,14 @@ void loop() {
   {
     payload.reset();
     payload.set("counter", count);
+
+    debugSerial.print("Counter =");
+    debugSerial.println(count);
     
     if (modem.send(payload))
     {
       count++;
-      if (count > 100) count = 1;
+      if (count > 10) count = 1;
     }
     else
     {

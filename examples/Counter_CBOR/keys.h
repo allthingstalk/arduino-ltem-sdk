@@ -10,6 +10,6 @@ char* DEVICE_TOKEN = "yourdevicetoken";
 char* APN = "starter.att.iot";
 
 // Enter the API endpoint for your Allthingstalk space
-char* SPACE = "api.allthingstalk.io";
+char* SPACE_ENDPOINT = "api.allthingstalk.io";
 
 #endif
