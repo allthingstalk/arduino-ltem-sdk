@@ -34,12 +34,12 @@
 #include "keys.h"
 
 #define debugSerial SerialUSB
-#define loraSerial Serial1
+#define ltemSerial Serial1
 
 void callback(const char* data);
 
 APICredentials credentials(SPACE, DEVICE_TOKEN, DEVICE_ID);
-LTEmModem modem(loraSerial, debugSerial, credentials, false, callback);
+LTEmModem modem(ltemSerial, debugSerial, credentials, false, callback);
 
 CborPayload payload;
 
