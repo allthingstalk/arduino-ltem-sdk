@@ -2,7 +2,7 @@
 
 APICredentials::APICredentials(char* broker, char* deviceToken, char* deviceId)
 {
-	_space = "api.allthingstalk.io";
+	_space = broker;
 	_deviceToken = deviceToken;
 	_deviceId = deviceId;
 }
