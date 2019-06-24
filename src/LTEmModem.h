@@ -110,6 +110,10 @@ class LTEmModem : public Device<LTEmOptions>
 		char* _apn;
 		char* _inputBuffer;
 		char* _ipAddress;
+		char* _imei;
+		char* _iccid;
+		char* _cimi;
+		char* _firmware;
 		
 		size_t _inputBufferSize;
 		size_t _pendingUDPBytes = 0;

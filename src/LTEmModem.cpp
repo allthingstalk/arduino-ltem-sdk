@@ -66,6 +66,34 @@ bool LTEmModem::init(char *apn)
 	
 	purgeAllResponsesRead(); //deleting all buffer data
 	
+	println("AT+CGSN"); //getting imei number
+	if (readResponse() != ResponseOK)
+		return false;
+	
+	_monitor->print("IMEI number: ");
+	_monitor->println(_imei);
+	
+	println("AT+CCID"); //getting iccid number
+	if (readResponse() != ResponseOK)
+		return false;
+	
+	_monitor->print("ICCID number: ");
+	_monitor->println(_iccid);
+	
+	println("AT+CIMI"); //getting cimi number
+	if (readResponse() != ResponseOK)
+		return false;
+	
+	_monitor->print("CIMI number: ");
+	_monitor->println(_cimi);
+	
+	println("AT+CGMR"); //getting firmware version
+	if (readResponse() != ResponseOK)
+		return false;
+	
+	_monitor->print("Firmware version: ");
+	_monitor->println(_firmware);
+	
 	println("AT+CEDRXS=0");
 	if (readResponse() != ResponseOK)
 		return false;
@@ -88,8 +116,8 @@ bool LTEmModem::init(char *apn)
 	
 	connect();
 	
-	if (!initTCP())
-		return false;
+//	if (!initTCP())
+//		return false;
 	
 	if (!initMQTT())
 		return false;
@@ -140,6 +168,7 @@ bool LTEmModem::initTCP()
 	{	
 		_monitor->println("Setting up TCP");
 		return setUpTCP(socketID, _credentials->getSpace(), 1883); 
+		//return setUpTCP(socketID, "m15.cloudmqtt.com", 11206); 
 	}
 	else 
 		return false;
@@ -205,6 +234,7 @@ bool LTEmModem::initMQTT()
     print("AT+UMQTT=");
     print('1');
     print(',');
+	//print(11206);
     print(1883);
 	println();
 	
@@ -229,11 +259,12 @@ bool LTEmModem::initMQTT()
     print('2');
     print(',');
     print("\"");
+	//print("m15.cloudmqtt.com");
     print(_credentials->getSpace());
     print("\"");
     print(',');
+	//print(11206);
     print(1883);
-    //print(";");
 	println();
 	
 	///wait until you receive UMQTT:2,1
@@ -256,10 +287,12 @@ bool LTEmModem::initMQTT()
     print('4');
     print(',');
     print("\"");
+	//print("zlozpmdl");
     print(_credentials->getDeviceToken());
     print("\"");
     print(',');
     print("\"");
+	//print("n1vyWdAKiX8v");
     print("password");
     print("\"");
     //print(";");
@@ -277,7 +310,7 @@ bool LTEmModem::initMQTT()
 		return false;
 	}
 	
-	ok = false;
+	/*ok = false;
 	value1 = 0;
 	value2 = 0;
 	println("AT+UMQTTWTOPIC=2,1,256"); //set QoS 2(publish exactly once), Will retain 1(remain on broker), max msg length
@@ -291,7 +324,7 @@ bool LTEmModem::initMQTT()
 	{
 		_monitor->println("Error");
 		return false;
-	}	
+	}*/	
 	
 	ok = false;
 	value1 = 0;
@@ -369,6 +402,7 @@ bool LTEmModem::listen(char* actuator)
 {
 	char buffer[255];
 	
+	//sprintf(buffer, "device/%s/asset/%s/feed", _credentials->getDeviceId(), actuator);
 	sprintf(buffer, "device/%s/asset/%s/command", _credentials->getDeviceId(), actuator);
 	
 	return subscribeMqttMessage(buffer);
@@ -612,9 +646,6 @@ void LTEmModem::purgeAllResponsesRead()
 
 bool LTEmModem::setRadioActive(bool on)
 {
-	_monitor->print("Set radio active:");
-	_monitor->println(on);
-	
     print("AT+CFUN=");
     println(on ? "1" : "0");
 
@@ -753,7 +784,7 @@ int LTEmModem::createTCPSocket(uint16_t localPort)
 	{
 		_ipAddress = value2;
 		_monitor->print("your ip-address: ");
-		_monitor->println(value2);
+		_monitor->println(_ipAddress);
 	}
 
 	print("AT+USOCR=6,");
@@ -948,10 +979,12 @@ ResponseTypes LTEmModem::_cgpAddrParser(ResponseTypes& response, const char* buf
 	uint8_t part4;
 	
 	if (sscanf(buffer, "+CGPADDR: %d,%u.%u.%u.%u", value1, part1, part2, part3, part4) == 5) {
-		// char *buf;
+		char buf[15];
+		char* buf2;
 		
-		// sprintf(buf, "%u.%u.%u.%u", part1, part2, part3, part4);
-		// value2 = &buf;
+		snprintf(buf, 15, "%u.%u.%u.%u", part1, part2, part3, part4);
+		buf2 = &buf[0];
+		value2 = &buf2;
 				
 		return ResponseEmpty;
     }
@@ -1150,7 +1183,38 @@ ResponseTypes LTEmModem::readResponse(char* buffer, size_t size,
 			if (buffer[0] == '\0' || buffer[0] == '\r')
 				continue;
 			
-
+			if (startsWith("AT+CGSN", buffer)) //getting imei
+			{
+				char myBuffer[200];
+				readLn(myBuffer, 200, 250);
+				
+				_imei = &myBuffer[0];
+			}
+			
+			if (startsWith("AT+CCID", buffer)) //getting iccid
+			{
+				char myBuffer[200];
+				readLn(myBuffer, 200, 250);
+				
+				_iccid = &myBuffer[7];
+			}
+			
+			if (startsWith("AT+CIMI", buffer))
+			{
+				char myBuffer[200];
+				readLn(myBuffer, 200, 250);
+				
+				_cimi = &myBuffer[0];
+			}
+			
+			if (startsWith("AT+CGMR", buffer)) //getting firmware version
+			{
+				char myBuffer[200];
+				readLn(myBuffer, 200, 250);
+				
+				_firmware = &myBuffer[0];
+			}
+			
             int param1, param2;
             if (sscanf(buffer, "+UFOTAS: %d,%d", &param1, &param2) == 2) { // Handle FOTA URC
                 uint16_t blkRm = param1;
@@ -1192,11 +1256,11 @@ ResponseTypes LTEmModem::readResponse(char* buffer, size_t size,
                 continue;
             }
 			
-			if (startsWith("+UUMQTTCM: 6", buffer)) {
+			if (startsWith("+UUMQTTCM: 6", buffer)) {  //handle MQTT message
 				process();
 			}
 			
-			if (startsWith("{\"at\":", buffer)) {	
+			if (startsWith("{\"at\":", buffer)) {	//handle callback 
 				_callback(buffer);
 			}
 
