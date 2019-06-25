@@ -84,7 +84,7 @@ bool LTEmModem::init(char *apn)
 	if (readResponse() != ResponseOK)
 		return false;
 	
-	_monitor->print("CIMI number: ");
+	_monitor->print("IMSI number: ");
 	_monitor->println(_cimi);
 	
 	println("AT+CGMR"); //getting firmware version
