@@ -42,7 +42,7 @@
 void callback(const char* data);
 
 APICredentials credentials(SPACE_ENDPOINT, DEVICE_TOKEN, DEVICE_ID);
-LTEmModem modem(ltemSerial, debugSerial, credentials, true, callback);  //false: disables full debug mode
+LTEmModem modem(ltemSerial, debugSerial, credentials, false, callback);  //false: disables full debug mode
 
 JsonPayload payload;
 
