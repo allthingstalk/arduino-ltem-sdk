@@ -14,6 +14,7 @@ public:
 
     template<typename T> bool add(T t);
 
+	virtual char* getString();
     virtual unsigned char* getBytes();
     virtual unsigned int getSize();
     virtual void reset();

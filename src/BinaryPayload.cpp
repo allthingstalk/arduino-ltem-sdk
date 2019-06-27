@@ -31,6 +31,11 @@ BinaryPayload::~BinaryPayload() {
     }
 }
 
+char* BinaryPayload::getString()
+{
+	
+}
+
 unsigned char *BinaryPayload::getBytes() {
     return buffer;
 }

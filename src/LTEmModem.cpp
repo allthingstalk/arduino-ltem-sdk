@@ -1,6 +1,8 @@
 #include "LTEmModem.h" 
 #include "Utils.h"
 
+#include<String.h>
+
 static inline bool is_timedout(uint32_t from, uint32_t nr_ms) __attribute__((always_inline));
 static inline bool is_timedout(uint32_t from, uint32_t nr_ms)
 {
@@ -502,16 +504,32 @@ bool LTEmModem::publishMqttMessage(const char* topic, int value)
 	return ok;
 }
 
-bool LTEmModem::publishMqttMessage(const char* topic, char* value)
+bool LTEmModem::publishMqttMessage(const char* topic, char* value, bool json)
 {
 	purgeAllResponsesRead();
 	
     print("AT+UMQTTC=2,0,0,\"");
-    print(topic);
-    print("\",");
-    print("\"{\"value\":\"");
-    print(value);
-    print("\"}\"");
+	
+	if (json)
+	{
+		print("device/");
+		print(_credentials->getDeviceId());
+		print("/asset/");
+		print(topic);
+		print("/state");
+		print("\",\"");
+		print(value);
+		print("\"");
+	}
+	else
+	{
+		print(topic);
+		print("\",");
+		print("\"{\"value\":\"");
+		print(value);
+		print("\"}\"");
+	}
+    
     println();
 
 	bool ok = false;
@@ -1396,19 +1414,33 @@ void LTEmModem::setOptions(Options* options)
 
 bool LTEmModem::send(Payload &payload)
 {
+	String temp(payload.getString());
+
+	int index = temp.indexOf("|");
+	
 	bool ok;
 	
-	char* Mqttstring_buff;
+	if (index == -1) //no json string
 	{
-		int length = strlen(_credentials->getDeviceId()) + 14;  // 14 fixed chars + deviceId
-		Mqttstring_buff = new char[length];
-		sprintf(Mqttstring_buff, "device/%s/state", _credentials->getDeviceId());
-		Mqttstring_buff[length-1] = 0;
+		char* Mqttstring_buff;
+		{
+			int length = strlen(_credentials->getDeviceId()) + 14;  // 14 fixed chars + deviceId
+			Mqttstring_buff = new char[length];
+			sprintf(Mqttstring_buff, "device/%s/state", _credentials->getDeviceId());
+			Mqttstring_buff[length-1] = 0;
+		}
+		
+		ok = publishMqttMessage(Mqttstring_buff, payload.getBytes(), payload.getSize());
+		
+		delete(Mqttstring_buff);
 	}
-	
-	ok = publishMqttMessage(Mqttstring_buff, payload.getBytes(), payload.getSize());
-	
-	delete(Mqttstring_buff);
+	else
+	{
+		String assetName = temp.substring(0, index);
+		String json = temp.substring(index+1);
+		
+		ok = publishMqttMessage(assetName.c_str(), (char*)json.c_str(), true);
+	}
 	
 	return ok;
 }

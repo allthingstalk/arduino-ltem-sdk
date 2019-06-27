@@ -120,7 +120,7 @@ class LTEmModem : public Device<LTEmOptions>
 		
 		bool publishMqttMessage(const char* topic, double value);
 		bool publishMqttMessage(const char* topic, int value);
-		bool publishMqttMessage(const char* topic, char* value);
+		bool publishMqttMessage(const char* topic, char* value, bool json = false);
 		bool publishMqttMessage(const char* topic, unsigned char* value, int size);
 		bool publishMqttMessage(const char* topic, GeoLocation* geoLocation);
 		
