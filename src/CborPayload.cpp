@@ -79,6 +79,11 @@ template<> void CborPayload::write(GeoLocation location) {
     }
 }
 
+char* CborPayload::getString()
+{
+	
+}
+
 unsigned char *CborPayload::getBytes() {
     if (assetCount == 0) {
         return 0;
