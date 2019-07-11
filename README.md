@@ -113,11 +113,12 @@ Like in CBOR, the set functionality is almost the same, except you have to trans
 ```
 BinaryPayload payload;
 
+payload.reset();
 payload.set(17.56);
 payload.set(true);
 payload.set("hello");
 
-modem.send(&payload);
+modem.send(payload);
 ```
 OR
 
