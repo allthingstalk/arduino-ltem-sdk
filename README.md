@@ -4,10 +4,9 @@ This is a SDK by AllThingsTalk that provides connectivity to their cloud through
 
 ### Version v1.0
 
-What's new?
-
 * Support Binary payloads
 * Support CBOR payloads
+* Support JSON payloads
 * Support Actuation
 
 ## Hardware
@@ -18,17 +17,21 @@ Chip
 - SARA-R410M (https://www.u-blox.com/en/product/sara-r4-series)
 
 Board
-- Sodaq AFF
-- Sodaq SFF
+- Sodaq AFF (https://support.sodaq.com/Boards/Sara_AFF/)
+- Sodaq SFF (https://support.sodaq.com/Boards/Sara_SFF/)
 
 ## Installation
 
-Download the library and import the .zip file directly using the Arduino IDE. (Sketch -> Include library -> Add .ZIP library)
+Download this library as .zip.
+In Arduino IDE goto Sketch ==> Include Library ==> Add .ZIP Library.
+
+This will import the new sdk and examples.
+
+> Note: to avoid conflicts, please remove or backup the old SDK
 
 ## How to use
 
 ### Credentials
-New classes are introduced, like the credentials classes.  
 
 **API Credentials**
 The API Credentials are used to connect to our cloud platform (https://maker.allthingstalk.com/)
@@ -128,6 +131,14 @@ modem.send(payload02);
 
 ```
 
+**Json Payload**
+```
+JsonPayload payload;
+
+payload.reset();
+payload.set("counter", "{\"value\": 1}");
+```
+
 ## Actuation
 You can also have actuation support in your sketch, the only thing you have to do is add following lines of code:
 ```
@@ -146,17 +157,8 @@ In the callback method you receive the json string that is sent from the backend
 **Parameters**
 data: json string 
 
-
 # License
 Apache 2.0
 
 # Contributions
 Pull requests and new issues are welcome.
-
-## How to Install
-Download this library as .zip.
-In Arduino IDE goto Sketch ==> Include Library ==> Add .ZIP Library.
-
-This will import the new sdk and examples.
-
-> Note: to avoid conflicts, please remove or backup the old SDK
