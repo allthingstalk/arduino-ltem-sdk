@@ -1,13 +1,17 @@
 # arduino-LTE-m-sdk
 
-This is a SDK by AllThingsTalk that provides connectivity to their cloud through [LTE-m radios](https://en.wikipedia.org/wiki/LTE-M).
+## About
+
+The LTE-M SDK for Arduino provides an easy to use set of functions that support LTE-M LPWAN networks for the AllThingsTalk IoT Cloud.
 
 ### Version v1.0
 
-* Support Binary payloads
-* Support CBOR payloads
-* Support JSON payloads
-* Support Actuation
+* Support for the U-Blox Model SARA-R410M
+* MQTT client support (using the embedded SARA-R410M MQTT client)
+* Support Binary encoding (compliant with the AllThingsTalk ABCL decoding language)
+* Support CBOR encoding
+* Support JSON encoding
+* Support for downlink messages
 
 ## Hardware
 
@@ -20,7 +24,7 @@ Board
 - Sodaq AFF (https://support.sodaq.com/Boards/Sara_AFF/)
 - Sodaq SFF (https://support.sodaq.com/Boards/Sara_SFF/)
 
-## Installation
+## How to install
 
 Download this library as .zip.
 In Arduino IDE goto Sketch ==> Include Library ==> Add .ZIP Library.
@@ -28,6 +32,8 @@ In Arduino IDE goto Sketch ==> Include Library ==> Add .ZIP Library.
 This will import the new sdk and examples.
 
 > Note: to avoid conflicts, please remove or backup the old SDK
+
+The Arduino LTE-M SDK uses the ArduinoJSON library. Make sure you have the ArduinoJSON library installed. You can download it here (https://github.com/allthingstalk/arduino-ltem-sdk)
 
 ## How to use
 
@@ -37,15 +43,10 @@ This will import the new sdk and examples.
 The API Credentials are used to connect to our cloud platform (https://maker.allthingstalk.com/)
 This class exists of one constructor with following parameters: space, device token and device id.
 
-*space*
-This parameter is to connect to our platform via api, like 'api.allthingstalk.io'.
-
-*device token*
-Every device in your private ground has a device token and device id.
-Your device token that you can find under settings -> authentication of your device
-
-*device id*
-You can also find this id where you can find your device token
+Space, Device Token and Device ID
+* Space: Sets your space endpoint, like 'api.allthingstalk.io'.
+* Device Token: device authentication & authorization bearer token. Your can find your Device Token in the AllThingsTalk Cloud under your device -> settings -> authentication.
+* Device ID:  Unique ID for your device in the AllThingsTalk Cloud. Your can find your Device ID in the AllThingsTalk Cloud under your device -> settings -> authentication.
 
 Example:
 ```
