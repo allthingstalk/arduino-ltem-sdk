@@ -36,7 +36,7 @@
 #include "keys.h"
 
 #define debugSerial SerialUSB
-#define ltemSerial Serial1
+#define ltemSerial SerialSARA
 
 void callback(const char* data);
 
