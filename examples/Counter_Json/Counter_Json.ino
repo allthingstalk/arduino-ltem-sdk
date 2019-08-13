@@ -74,8 +74,8 @@ void loop() {
 
     char* sendString = &temp[0];
 	
-	debugSerial.print("Sending: ");
-	debugSerial.println(sendString);
+  	debugSerial.print("Sending: ");
+  	debugSerial.println(sendString);
     
     payload.reset();
     payload.set("counter", sendString);
