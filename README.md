@@ -1,14 +1,17 @@
 # arduino-LTE-m-sdk
 
-This is a SDK by AllThingsTalk that provides connectivity to their cloud through [LTE-m radios](https://en.wikipedia.org/wiki/LTE-M).
+## About
+
+The LTE-M SDK for Arduino provides an easy to use set of functions that support LTE-M LPWAN networks for the AllThingsTalk IoT Cloud.
 
 ### Version v1.0
 
-What's new?
-
-* Support Binary payloads
-* Support CBOR payloads
-* Support Actuation
+* Support for the U-Blox Model SARA-R410M
+* MQTT client support (using the embedded SARA-R410M MQTT client)
+* Support Binary encoding (compliant with the AllThingsTalk ABCL decoding language)
+* Support CBOR encoding
+* Support JSON encoding
+* Support for downlink messages
 
 ## Hardware
 
@@ -18,31 +21,32 @@ Chip
 - SARA-R410M (https://www.u-blox.com/en/product/sara-r4-series)
 
 Board
-- Sodaq AFF
-- Sodaq SFF
+- Sodaq AFF (https://support.sodaq.com/Boards/Sara_AFF/)
+- Sodaq SFF (https://support.sodaq.com/Boards/Sara_SFF/)
 
-## Installation
+## How to install
 
-Download the library and import the .zip file directly using the Arduino IDE. (Sketch -> Include library -> Add .ZIP library)
+Download this library as .zip.
+In Arduino IDE goto Sketch ==> Include Library ==> Add .ZIP Library.
+
+This will import the new sdk and examples.
+
+> Note: to avoid conflicts, please remove or backup the old SDK
+
+The Arduino LTE-M SDK uses the ArduinoJSON library. Make sure you have the ArduinoJSON library installed. You can download it here (https://github.com/allthingstalk/arduino-ltem-sdk)
 
 ## How to use
 
 ### Credentials
-New classes are introduced, like the credentials classes.  
 
 **API Credentials**
 The API Credentials are used to connect to our cloud platform (https://maker.allthingstalk.com/)
 This class exists of one constructor with following parameters: space, device token and device id.
 
-*space*
-This parameter is to connect to our platform via api, like 'api.allthingstalk.io'.
-
-*device token*
-Every device in your private ground has a device token and device id.
-Your device token that you can find under settings -> authentication of your device
-
-*device id*
-You can also find this id where you can find your device token
+Space, Device Token and Device ID
+* Space: Sets your space endpoint, like 'api.allthingstalk.io'.
+* Device Token: device authentication & authorization bearer token. Your can find your Device Token in the AllThingsTalk Cloud under your device -> settings -> authentication.
+* Device ID:  Unique ID for your device in the AllThingsTalk Cloud. Your can find your Device ID in the AllThingsTalk Cloud under your device -> settings -> authentication.
 
 Example:
 ```
@@ -110,11 +114,12 @@ Like in CBOR, the set functionality is almost the same, except you have to trans
 ```
 BinaryPayload payload;
 
+payload.reset();
 payload.set(17.56);
 payload.set(true);
 payload.set("hello");
 
-modem.send(&payload);
+modem.send(payload);
 ```
 OR
 
@@ -126,6 +131,14 @@ modem.send(payload01);
 delay(5000);
 modem.send(payload02);
 
+```
+
+**Json Payload**
+```
+JsonPayload payload;
+
+payload.reset();
+payload.set("counter", "{\"value\": 1}");
 ```
 
 ## Actuation
@@ -146,17 +159,8 @@ In the callback method you receive the json string that is sent from the backend
 **Parameters**
 data: json string 
 
-
 # License
 Apache 2.0
 
 # Contributions
 Pull requests and new issues are welcome.
-
-## How to Install
-Download this library as .zip.
-In Arduino IDE goto Sketch ==> Include Library ==> Add .ZIP Library.
-
-This will import the new sdk and examples.
-
-> Note: to avoid conflicts, please remove or backup the old SDK

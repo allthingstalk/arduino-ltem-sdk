@@ -51,7 +51,7 @@ void setup() {
   debugSerial.begin(115200);
   while (!debugSerial  && millis() < 10000) {}
 
-  debugSerial.begin("Init modem");
+  debugSerial.println("Init modem");
   if (modem.init(APN)) //wake up modem
   {
     debugSerial.println("Modem init succeeded");
