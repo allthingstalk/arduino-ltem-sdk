@@ -40,13 +40,15 @@ LTEmModem::LTEmModem(HardwareSerial &serial, Stream &monitor, APICredentials &cr
 	#ifdef _VARIANT_SODAQ_SFF_
 		this->_onOffPin = 49; //onoffPin;		
 		this->_saraR4XXTogglePin = 15; //saraR4XXTogglePin;
-	#elseif _VARIANT_SODAQ_AFF_
-		this->_onOffPin = 27; //onoffPin;
-		this->_saraR4XXTogglePin = 52; //saraR4XXTogglePin;
-	#else
-		this->_onOffPin = 35;
-		this->_saraR4XXTogglePin = 31;
-	#endif	
+	#else 
+		#ifdef _VARIANT_SODAQ_SARA_
+			this->_onOffPin = 27; //onoffPin;
+			this->_saraR4XXTogglePin = 52; //saraR4XXTogglePin;
+		#else
+			this->_onOffPin = 35;
+			this->_saraR4XXTogglePin = 31;
+		#endif	
+	#endif
 }
 
 bool LTEmModem::init(char *apn)
