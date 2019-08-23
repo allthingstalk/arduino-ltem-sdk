@@ -51,6 +51,11 @@ LTEmModem::LTEmModem(HardwareSerial &serial, Stream &monitor, APICredentials &cr
 	#endif
 }
 
+char* LTEmModem::getLastError()
+{
+	return _lastError;
+}
+
 bool LTEmModem::init(char *apn)
 {
 	this->_apn = apn;
@@ -69,62 +74,83 @@ bool LTEmModem::init(char *apn)
 	
 	_monitor->println("Setting ON");
 	if(!on())
+	{
+		_lastError = "Could not activate modem";
 		return false;
+	}
 	
-	purgeAllResponsesRead(); //deleting all buffer data
+	purgeAllResponsesRead(); 							//deleting all buffer data
 	
-	println("AT+CGSN"); //getting imei number
+	println("AT+CGSN"); 								//getting imei number
 	if (readResponse() != ResponseOK)
+	{
+		_lastError = "Couldn't get IMEI number";
 		return false;
+	}
 	
 	_monitor->print("IMEI number: ");
 	_monitor->println(_imei);
 	
-	println("AT+CCID"); //getting iccid number
+	println("AT+CCID"); 								//getting iccid number
 	if (readResponse() != ResponseOK)
+	{
+		_lastError = "Couldn't get iccid number";
 		return false;
+	}
 	
 	_monitor->print("ICCID number: ");
 	_monitor->println(_iccid);
 	
-	println("AT+CIMI"); //getting cimi number
+	println("AT+CIMI"); 								//getting cimi number
 	if (readResponse() != ResponseOK)
+	{
+		_lastError = "Couldn't get cimi number";
 		return false;
+	}
 	
 	_monitor->print("IMSI number: ");
 	_monitor->println(_cimi);
 	
-	println("AT+CGMR"); //getting firmware version
+	println("AT+CGMR"); 								//getting firmware version
 	if (readResponse() != ResponseOK)
+	{
+		_lastError = "Couldn't get firmware version";
 		return false;
+	}
 	
 	_monitor->print("Firmware version: ");
 	_monitor->println(_firmware);
 	
-	println("AT+CEDRXS=0");
+	println("AT+CEDRXS=0");								//use of eDRX disabled
 	if (readResponse() != ResponseOK)
+	{
+		_lastError = "Failed to disable eDRX";
 		return false;
+	}
 	
 	println("ATE0");
 	if (readResponse() != ResponseOK)
 		return false;
 	
-	println("AT+URAT=7");
+	println("AT+URAT=7");								//use LTE Cat M1
 	if (readResponse() != ResponseOK)
+	{
+		_lastError = "Failed to use LTE Cat M1";
 		return false;
+	}
 	
-	println("AT+CMEE=2");
+	println("AT+CMEE=2");								//<err> result code enabled and verbose <err> values used
 	if (readResponse() != ResponseOK)
 		return false;
 	
 	_monitor->println("Set radio active");
-	if(!setRadioActive(true))
+	if(!setRadioActive(true))							//sets the MT to full functionality
+	{
+		_lastError = "Failed to activate radio";
 		return false;
+	}
 	
-	connect();
-	
-//	if (!initTCP())
-//		return false;
+	connect();											//connect to the APN network
 	
 	if (!initMQTT())
 		return false;
@@ -187,7 +213,7 @@ bool LTEmModem::initMQTT()
 	int value1 = 0;
 	int value2 = 0;
 	
-	println("AT+UMQTT=12,1"); //clean mqtt session
+	println("AT+UMQTT=12,1"); 					//clean mqtt session
 	if (readResponse<int, int>(_umqttParser, &value1, &value2) == ResponseOK)
 	{		
 		ok = value1 == 12 && value2 == 1; 
@@ -195,13 +221,13 @@ bool LTEmModem::initMQTT()
 	
 	if (!ok)
 	{
-		_monitor->println("Error");
+		_lastError = "Failed to clean MQTT session";
 		return false;
 	}
 	
 	value1 = 0;
 	value2 = 0;
-	println("AT+UMQTTC=7,0");
+	println("AT+UMQTTC=7,0");					//sets the terse/verbose format for received messages
 	
 	if (readResponse<int, int>(_umqttcParser, &value1, &value2) == ResponseOK) {
         ok = value1 == 7 && value2 == 1;
@@ -209,11 +235,11 @@ bool LTEmModem::initMQTT()
 	
 	if (!ok)
 	{
-		_monitor->println("Error");
+		_lastError = "Failed to set verbose format for MQTT messages";
 		return false;
 	}
 	
-    print("AT+UMQTT=");
+    print("AT+UMQTT=");							//MQTT unique client id
     print('0');
     print(',');
     print("\"");
@@ -230,7 +256,7 @@ bool LTEmModem::initMQTT()
     
 	if (!ok)
 	{
-		_monitor->println("Error");
+		_lastError = "Failed to set clientId";
 		return false;
 	}
 	
@@ -238,7 +264,7 @@ bool LTEmModem::initMQTT()
 	value1 = 0;
 	value2 = 0;
 
-    print("AT+UMQTT=");
+    print("AT+UMQTT=");							//MQTT local port number
     print('1');
     print(',');
 	//print(11206);
@@ -253,7 +279,7 @@ bool LTEmModem::initMQTT()
 	
 	if (!ok)
 	{
-		_monitor->println("Error");
+		_lastError = "Failed to set local port";
 		return false;
 	}
 	
@@ -262,7 +288,7 @@ bool LTEmModem::initMQTT()
 	value1 = 0;
 	value2 = 0;
 	
-    print("AT+UMQTT=");
+    print("AT+UMQTT=");							//MQTT server name
     print('2');
     print(',');
     print("\"");
@@ -282,7 +308,7 @@ bool LTEmModem::initMQTT()
 	
 	if (!ok)
 	{
-		_monitor->println("Error");
+		_lastError = "Failed to set MQTT server name";
 		return false;
 	}
 	
@@ -290,7 +316,7 @@ bool LTEmModem::initMQTT()
 	value1 = 0;
 	value2 = 0;
 	
-    print("AT+UMQTT=");
+    print("AT+UMQTT=");							//MQTT username and password
     print('4');
     print(',');
     print("\"");
@@ -313,7 +339,7 @@ bool LTEmModem::initMQTT()
 	
 	if (!ok)
 	{
-		_monitor->println("Error");
+		_lastError = "Failed to set username/password";
 		return false;
 	}
 	
@@ -337,7 +363,7 @@ bool LTEmModem::initMQTT()
 	value1 = 0;
 	value2 = 0;
 	
-    print("AT+UMQTT=");
+    print("AT+UMQTT=");								//MQTT inactivity timeout period
     print('1');
     print('0');
     print(',');
@@ -352,7 +378,7 @@ bool LTEmModem::initMQTT()
 	
 	if (!ok)
 	{
-		_monitor->println("Error");
+		_lastError = "Failed to set inactivity timeout period";
 		return false;
 	}
 	
@@ -360,7 +386,7 @@ bool LTEmModem::initMQTT()
 	value1 = 0;
 	value2 = 0;
 	
-	println("AT+UMQTTC=1");
+	println("AT+UMQTTC=1");							//logs in/connects to MQTT server
 	
     if (readResponse<int, int>(_umqttcParser, &value1, &value2) == ResponseOK) {
         ok = value1 == 1 && value2 == 1;
@@ -368,7 +394,7 @@ bool LTEmModem::initMQTT()
 	
 	if (!ok)
 	{
-		_monitor->println("Error");
+		_lastError = "Failed to connect to MQTT server.\r\nPlease check keys";
 		return false;
 	}
 		
@@ -376,6 +402,7 @@ bool LTEmModem::initMQTT()
 	value1 = 0;
 	value2 = 0;
 	
+	//Wait for response from uumqttc
 	readResponse<int, int>(_uumqttcParser, &value1, &value2); //Don't check on ResponseOK, because you get only get +UUMQTTC 1,0 without an OK
 	ok = value1 == 1 && value2 == 0;
 	
@@ -440,7 +467,7 @@ void LTEmModem::setTxEnablePin(int8_t txEnablePin)
 
 bool LTEmModem::connect()
 {	
-	print("AT+CGDCONT=1,\"IP\",\"");
+	print("AT+CGDCONT=1,\"IP\",\"");					//connect to the apn network
 	print(_apn);
 	println("\"");
 
@@ -460,6 +487,7 @@ bool LTEmModem::connect()
 bool LTEmModem::publishMqttMessage(const char* topic, double value)
 {
 	purgeAllResponsesRead();
+	_lastError = "";
 	
     print("AT+UMQTTC=2,0,0,\"");
     print(topic);
@@ -478,7 +506,7 @@ bool LTEmModem::publishMqttMessage(const char* topic, double value)
     }
 	
 	if (!ok)
-		_monitor->println("Could not publish message");
+		_lastError = "Could not publish message";
 	
 	return ok;
 }
@@ -632,7 +660,10 @@ bool LTEmModem::subscribeMqttMessage(const char* topic)
     }
 	
 	if (!ok)
+	{
+		_lastError = "Could not subscribe to message";
 		return false;
+	}
 	
 	ok = false;
     value1 = 0;
@@ -669,7 +700,7 @@ void LTEmModem::purgeAllResponsesRead()
 
 bool LTEmModem::setRadioActive(bool on)
 {
-    print("AT+CFUN=");
+    print("AT+CFUN=");										// sets the MT to full functionality
     println(on ? "1" : "0");
 
     return (readResponse() == ResponseOK);
@@ -684,7 +715,7 @@ bool LTEmModem::isAlive()
 
 void LTEmModem::reboot()
 {
-    println("AT+CFUN=15"); // reset modem + sim
+    println("AT+CFUN=15"); 									// reset modem + sim
     
     // wait up to 2000ms for the modem to come up
     uint32_t start = millis();
@@ -741,7 +772,7 @@ bool LTEmModem::on()
     }
 
     if (timeout) {
-        _monitor->println("Error: No Reply from Modem");
+        _lastError = "Error: No Reply from Modem";
         return false;
     }
 
