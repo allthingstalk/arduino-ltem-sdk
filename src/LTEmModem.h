@@ -56,6 +56,8 @@ class LTEmModem : public Device<LTEmOptions>
 		void disconnect();
 		void process();
 		
+		char* getLastError();
+		
 		using Device<LTEmOptions>::send;
 		
 	private:
@@ -114,6 +116,7 @@ class LTEmModem : public Device<LTEmOptions>
 		char* _iccid;
 		char* _cimi;
 		char* _firmware;
+		char* _lastError = "";
 		
 		size_t _inputBufferSize;
 		size_t _pendingUDPBytes = 0;
