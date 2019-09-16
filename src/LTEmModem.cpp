@@ -24,8 +24,7 @@ static NameValuePair nConfig[nConfigCount] = {
     //{ "ENABLE_BIP", false },
 };
 
-LTEmModem::LTEmModem(HardwareSerial &serial, Stream &monitor, APICredentials &credentials, bool fullDebug, ATT_CALLBACK_SIGNATURE) : Device()
-{
+LTEmModem::LTEmModem(HardwareSerial &serial, Stream &monitor, APICredentials &credentials, bool fullDebug, ATT_CALLBACK_SIGNATURE) : Device() {
 	this->_serial = &serial;
 	this->_monitor = &monitor;
 	this->_credentials = &credentials;
@@ -51,13 +50,11 @@ LTEmModem::LTEmModem(HardwareSerial &serial, Stream &monitor, APICredentials &cr
 	#endif
 }
 
-char* LTEmModem::getLastError()
-{
+char* LTEmModem::getLastError() {
 	return _lastError;
 }
 
-bool LTEmModem::init(char *apn)
-{
+bool LTEmModem::init(char *apn) {
 	this->_apn = apn;
 	
 	_serial->begin(getDefaultBaudRate());
@@ -73,8 +70,7 @@ bool LTEmModem::init(char *apn)
     setTxEnablePin(_txEnablePin);
 	
 	_monitor->println("Setting ON");
-	if(!on())
-	{
+	if(!on()) {
 		_lastError = "Could not activate modem";
 		return false;
 	}
@@ -82,8 +78,7 @@ bool LTEmModem::init(char *apn)
 	purgeAllResponsesRead(); 							//deleting all buffer data
 	
 	println("AT+CGSN"); 								//getting imei number
-	if (readResponse() != ResponseOK)
-	{
+	if (readResponse() != ResponseOK) {
 		_lastError = "Couldn't get IMEI number";
 		return false;
 	}
@@ -92,8 +87,7 @@ bool LTEmModem::init(char *apn)
 	_monitor->println(_imei);
 	
 	println("AT+CCID"); 								//getting iccid number
-	if (readResponse() != ResponseOK)
-	{
+	if (readResponse() != ResponseOK) {
 		_lastError = "Couldn't get iccid number";
 		return false;
 	}
@@ -102,8 +96,7 @@ bool LTEmModem::init(char *apn)
 	_monitor->println(_iccid);
 	
 	println("AT+CIMI"); 								//getting cimi number
-	if (readResponse() != ResponseOK)
-	{
+	if (readResponse() != ResponseOK) {
 		_lastError = "Couldn't get cimi number";
 		return false;
 	}
@@ -112,8 +105,7 @@ bool LTEmModem::init(char *apn)
 	_monitor->println(_cimi);
 	
 	println("AT+CGMR"); 								//getting firmware version
-	if (readResponse() != ResponseOK)
-	{
+	if (readResponse() != ResponseOK) {
 		_lastError = "Couldn't get firmware version";
 		return false;
 	}
@@ -122,8 +114,7 @@ bool LTEmModem::init(char *apn)
 	_monitor->println(_firmware);
 	
 	println("AT+CEDRXS=0");								//use of eDRX disabled
-	if (readResponse() != ResponseOK)
-	{
+	if (readResponse() != ResponseOK) {
 		_lastError = "Failed to disable eDRX";
 		return false;
 	}
@@ -133,8 +124,7 @@ bool LTEmModem::init(char *apn)
 		return false;
 	
 	println("AT+URAT=7");								//use LTE Cat M1
-	if (readResponse() != ResponseOK)
-	{
+	if (readResponse() != ResponseOK) {
 		_lastError = "Failed to use LTE Cat M1";
 		return false;
 	}
@@ -144,8 +134,7 @@ bool LTEmModem::init(char *apn)
 		return false;
 	
 	_monitor->println("Set radio active");
-	if(!setRadioActive(true))							//sets the MT to full functionality
-	{
+	if(!setRadioActive(true)) {							//sets the MT to full functionality
 		_lastError = "Failed to activate radio";
 		return false;
 	}
@@ -158,14 +147,156 @@ bool LTEmModem::init(char *apn)
 	return true;
 }
 
-void LTEmModem::disconnect()
-{
+bool LTEmModem::init() {
+	_serial->begin(getDefaultBaudRate());
+	while ((!_serial)) {}
+	
+	_monitor->println("Init Buffer");
+	initBuffer(); // safe to call multiple times
+	
+	_monitor->println("Setting on/off pin");
+    init(_onOffPin, _saraR4XXTogglePin);
+
+	_monitor->println("Setting TX Enable Pin");
+    setTxEnablePin(_txEnablePin);
+	
+	_monitor->println("Setting ON");
+	if(!on()) {
+		_lastError = "Could not activate modem";
+		return false;
+	}
+}
+
+bool LTEmModem::registerDevice(char* deviceSecret) {
+	bool ok = false;
+	int value1 = 0;
+	int value2 = 0;
+	
+	/*
+	println("AT+CMEE=2");		// result code disabled and ERROR used
+	if (readResponse() != ResponseOK)
+		return false;
+	
+	
+	println("AT+CFUN=15");		// reset modem
+	if (readResponse() != ResponseOK)
+		return false;
+	
+	if(!on())					//activate the modem
+	{
+		_lastError = "Could not activate modem";
+		return false;
+	}
+	
+	println("AT+CPIN?");		// check if pin is OK
+	readResponse();
+	
+	println("AT+CMGF=1");		//URC Text format
+	if (readResponse() != ResponseOK)
+		return false;
+	
+	println("AT+UDCONF=1,1");	//enable hex formatted string to be converted into binary data before sending to the socket
+	if (readResponse() != ResponseOK)
+		return false;
+	
+	println("AT+CTZU=1");		//enable automatic time zone
+	if (readResponse() != ResponseOK)
+		return false;
+	
+	println("AT+CGDCONT=1,\"IP\",\"\"");		
+	if (readResponse() != ResponseOK)
+		return false;
+	
+	println("AT+UAUTHREQ=1,0");	//No Authentication
+	if (readResponse() != ResponseOK)
+		return false;
+	
+	println("AT+CFUN=1");		//sets modem to full functionality
+	if (readResponse() != ResponseOK)
+		return false; */
+	
+	while (value1 != 0 || value2 != 1)	// wait until we are registered to the network
+	{
+		println("AT+CEREG?");
+		readResponse<int, int>(_ceregParser, &value1, &value2);
+		delay(500);
+	}
+	
+	println("AT+CGATT=1");		// attach to gprs network 
+	if (readResponse() != ResponseOK)
+		return false;
+	
+	println("AT+CGACT?");		// check if we are attached
+	readResponse(); 
+	
+	//if (initTCP()) {			// make a tcp socket
+		println("AT+UDELFILE=\"postdata.txt\"");			//delete file with json format
+		readResponse();
+		
+		println("AT+UDELFILE=\"result.txt\"");			//delete file with json format
+		readResponse();
+		
+		println("AT+UDWNFILE=\"postdata.txt\",29");			//create file
+		readResponse();
+		
+		println("{\"secret\": \"352753090834365\"}");
+		readResponse();
+		
+		println("AT+URDFILE=\"postdata.txt\"");				//read data written to file 
+		readResponse();
+		
+		println("AT+UHTTP=0 ");								//reset the HTTP profile #0
+		readResponse();
+		
+		print("AT+UHTTP=0,1,\"");
+		print(_credentials->getSpace());
+		println("\"");
+		
+		if (readResponse() != ResponseOK)
+			return false;
+	
+		println("AT+UHTTP=0,9,\"0:content-type:application/json\"");	//set header configuration
+		if (readResponse() != ResponseOK)
+			return false;
+		
+		//println("AT+UHTTP=0,5,80");										//set the port of the HTTP request to 80
+		//if (readResponse() != ResponseOK)
+		//	return false;
+		
+		//println("AT+UHTTPC=0,5,\"/partner/Alain/register\",\"result.txt\",\"{\"secret\": \"352753090600121\"}\",6,\"Content-Type: application/json\"");
+		//println("AT+UHTTPC=0,5,\"/partner/Alain/register\",\"result.txt\",\"{\"secret\": \"352753090600121\"}\",1");
+
+		println("AT+UHTTPC=0,4,\"/partner/Alain/register/\", \"result.txt\", \"postdata.txt\", 4");	//Submit a post command in json format and store the answer in result.txt.
+		
+		//println("AT+UHTTPC=0,4,\"/efa80308-d1ee-42f6-866f-34c1eb66d933/\", \"result.txt\", \"postdata.txt\", 4");	//Submit a post command in json format and store the answer in result.txt.
+		if (readResponse() != ResponseOK)
+			return false;
+		
+		value1 = 0;
+		value2 = 0;
+		readResponse<int, int>(_uuhttpParser, &value1, &value2);	//wait for response from post command
+		
+		println("AT+URDFILE=\"result.txt\"");				//read data written to file 
+		readResponse();
+		
+		if (value1 != 4 || value2 != 1) {
+			return false;
+		}
+		else {
+			println("AT+URDFILE=\"post.ffs\"");
+			readResponse();
+		}
+	//}
+	
+	return true;
+}
+
+void LTEmModem::disconnect() {
 	println("AT+CGATT=0");
 	readResponse();
 }
 
-void LTEmModem::init(int onoffPin, int8_t saraR4XXTogglePin)
-{
+void LTEmModem::init(int onoffPin, int8_t saraR4XXTogglePin) {
     if (_onOffPin >= 0) {
         // First write the output value, and only then set the output mode.
         digitalWrite(_onOffPin, LOW);
@@ -178,8 +309,18 @@ void LTEmModem::init(int onoffPin, int8_t saraR4XXTogglePin)
     }
 }
 
-bool LTEmModem::initTCP()
-{
+char* LTEmModem::getIMEI() {
+	println("AT+CGSN"); 								//getting imei number
+	if (readResponse() != ResponseOK)
+	{
+		_lastError = "Couldn't get IMEI number";
+		return "";
+	}
+	
+	return _imei;
+}
+
+bool LTEmModem::initTCP() {
 	_monitor->println("Trying to make tcp connection");
 	
 	purgeAllResponsesRead(); // Remove all data on buffer
@@ -189,57 +330,74 @@ bool LTEmModem::initTCP()
 	
 	int socketID = createTCPSocket(localPort);
 	
-	while (socketID == SOCKET_FAIL && retryCount <= 5)
-	{
+	while (socketID == SOCKET_FAIL && retryCount <= 5) {
 		_monitor->println("Retrying...");
 		delay(500);
 		socketID = createTCPSocket(localPort);
 		retryCount++;
 	}
 	
-	if (socketID != SOCKET_FAIL)
-	{	
-		_monitor->println("Setting up TCP");
-		return setUpTCP(socketID, _credentials->getSpace(), 1883); 
-		//return setUpTCP(socketID, "m15.cloudmqtt.com", 11206); 
+	_socketId = socketID;
+	
+	if (socketID != SOCKET_FAIL) {	
+		return setUpTCP(socketID, _credentials->getSpace(), 443); 
 	}
 	else 
 		return false;
 }
 
-bool LTEmModem::initMQTT()
-{
+bool LTEmModem::initMQTT() {
+	if (cleanMQTTSession() && setVerboseMessage() && setClientId() && setMQTTPort() &&
+		setMQTTServer() && setUsernamePassword() && setMQTTTimeoutPeriod()) {
+	
+		
+		return loginMQTT();
+	}
+	
+	return false;
+}
+
+bool LTEmModem::cleanMQTTSession() {
 	bool ok = false;
 	int value1 = 0;
 	int value2 = 0;
 	
 	println("AT+UMQTT=12,1"); 					//clean mqtt session
-	if (readResponse<int, int>(_umqttParser, &value1, &value2) == ResponseOK)
-	{		
+	if (readResponse<int, int>(_umqttParser, &value1, &value2) == ResponseOK) {		
 		ok = value1 == 12 && value2 == 1; 
 	}
 	
-	if (!ok)
-	{
+	if (!ok) {
 		_lastError = "Failed to clean MQTT session";
-		return false;
 	}
 	
-	value1 = 0;
-	value2 = 0;
+	return ok;
+}
+
+bool LTEmModem::setVerboseMessage() {
+	bool ok = false;
+	int value1 = 0;
+	int value2 = 0;
+	
 	println("AT+UMQTTC=7,0");					//sets the terse/verbose format for received messages
 	
 	if (readResponse<int, int>(_umqttcParser, &value1, &value2) == ResponseOK) {
         ok = value1 == 7 && value2 == 1;
     }
 	
-	if (!ok)
-	{
+	if (!ok) {
 		_lastError = "Failed to set verbose format for MQTT messages";
-		return false;
 	}
 	
-    print("AT+UMQTT=");							//MQTT unique client id
+	return ok;
+}
+
+bool LTEmModem::setClientId() {
+	bool ok = false;
+	int value1 = 0;
+	int value2 = 0;
+	
+	print("AT+UMQTT=");							//MQTT unique client id
     print('0');
     print(',');
     print("\"");
@@ -249,119 +407,100 @@ bool LTEmModem::initMQTT()
 	
 	///wait until you receive UMQTT:0,1
 	
-	if (readResponse<int, int>(_umqttParser, &value1, &value2) == ResponseOK)
-	{		
+	if (readResponse<int, int>(_umqttParser, &value1, &value2) == ResponseOK) {
 		ok = value1 == 0 && value2 == 1;
 	}
     
-	if (!ok)
-	{
+	if (!ok) {
 		_lastError = "Failed to set clientId";
-		return false;
 	}
 	
-	ok = false;
-	value1 = 0;
-	value2 = 0;
+	return ok;
+}
 
-    print("AT+UMQTT=");							//MQTT local port number
+bool LTEmModem::setMQTTPort()
+{
+	bool ok = false;
+	int value1 = 0;
+	int value2 = 0;
+	
+	print("AT+UMQTT=");							
     print('1');
     print(',');
-	//print(11206);
     print(1883);
 	println();
 	
 	///wait until you receive UMQTT:1,1
-	if (readResponse<int, int>(_umqttParser, &value1, &value2) == ResponseOK)
-	{	
+	if (readResponse<int, int>(_umqttParser, &value1, &value2) == ResponseOK) {	
 		ok = value1 == 1 && value2 == 1;
 	}
 	
-	if (!ok)
-	{
+	if (!ok) {
 		_lastError = "Failed to set local port";
-		return false;
 	}
 	
+	return ok;
+}
+
+bool LTEmModem::setMQTTServer() {
+	bool ok = false;
+	int value1 = 0;
+	int value2 = 0;
 	
-	ok = false;
-	value1 = 0;
-	value2 = 0;
-	
-    print("AT+UMQTT=");							//MQTT server name
+	print("AT+UMQTT=");							//MQTT server name
     print('2');
     print(',');
     print("\"");
-	//print("m15.cloudmqtt.com");
     print(_credentials->getSpace());
     print("\"");
     print(',');
-	//print(11206);
     print(1883);
 	println();
 	
 	///wait until you receive UMQTT:2,1
-	if (readResponse<int, int>(_umqttParser, &value1, &value2) == ResponseOK)
-	{	
+	if (readResponse<int, int>(_umqttParser, &value1, &value2) == ResponseOK) {	
 		ok = value1 == 2 && value2 == 1;
 	}
 	
-	if (!ok)
-	{
+	if (!ok) {
 		_lastError = "Failed to set MQTT server name";
-		return false;
 	}
 	
-	ok = false;
-	value1 = 0;
-	value2 = 0;
+	return ok;
+}
+
+bool LTEmModem::setUsernamePassword() {
+	bool ok = false;
+	int value1 = 0;
+	int value2 = 0;
 	
     print("AT+UMQTT=");							//MQTT username and password
     print('4');
     print(',');
     print("\"");
-	//print("zlozpmdl");
     print(_credentials->getDeviceToken());
     print("\"");
     print(',');
     print("\"");
-	//print("n1vyWdAKiX8v");
     print("password");
     print("\"");
-    //print(";");
 	println();
 	
-	///wait until you receive UMQTT:4,1
-	if (readResponse<int, int>(_umqttParser, &value1, &value2) == ResponseOK)
-	{	
+	if (readResponse<int, int>(_umqttParser, &value1, &value2) == ResponseOK) {	
 		ok = value1 == 4 && value2 == 1;
 	}
 	
-	if (!ok)
-	{
+	if (!ok) {
 		_lastError = "Failed to set username/password";
-		return false;
 	}
 	
-	/*ok = false;
-	value1 = 0;
-	value2 = 0;
-	println("AT+UMQTTWTOPIC=2,1,256"); //set QoS 2(publish exactly once), Will retain 1(remain on broker), max msg length
-	
-	if (readResponse<int, int>(_umqttTopicParser, &value1, &value2) == ResponseOK)
-	{	
-		ok = value1 == 1;
-	}
-	
-	if (!ok)
-	{
-		_monitor->println("Error");
-		return false;
-	}*/	
-	
-	ok = false;
-	value1 = 0;
-	value2 = 0;
+	return ok;
+}
+
+bool LTEmModem::setMQTTTimeoutPeriod() {
+	bool ok = false;
+	int value1 = 0;
+	int value2 = 0;
 	
     print("AT+UMQTT=");								//MQTT inactivity timeout period
     print('1');
@@ -371,20 +510,21 @@ bool LTEmModem::initMQTT()
 	println();
 	
 	///wait until you receive UMQTT:10,1
-	if (readResponse<int, int>(_umqttParser, &value1, &value2) == ResponseOK)
-	{	
+	if (readResponse<int, int>(_umqttParser, &value1, &value2) == ResponseOK) {	
 		ok = value1 == 10 && value2 == 1;
 	}
 	
-	if (!ok)
-	{
+	if (!ok) {
 		_lastError = "Failed to set inactivity timeout period";
-		return false;
 	}
 	
-	ok = false;
-	value1 = 0;
-	value2 = 0;
+	return ok;
+}
+
+bool LTEmModem::loginMQTT() {
+	bool ok = false;
+	int value1 = 0;
+	int value2 = 0;
 	
 	println("AT+UMQTTC=1");							//logs in/connects to MQTT server
 	
@@ -392,8 +532,7 @@ bool LTEmModem::initMQTT()
         ok = value1 == 1 && value2 == 1;
     }
 	
-	if (!ok)
-	{
+	if (!ok) {
 		_lastError = "Failed to connect to MQTT server.\r\nPlease check keys";
 		return false;
 	}
@@ -409,8 +548,7 @@ bool LTEmModem::initMQTT()
 	return ok;
 }
 
-bool LTEmModem::mqttConnected()
-{
+bool LTEmModem::mqttConnected() {
 	print("AT+UMQTTC=8,\"");
 	print(_credentials->getSpace());
 	println("\"");
@@ -432,8 +570,7 @@ bool LTEmModem::mqttConnected()
 	return ok;
 }
 
-bool LTEmModem::listen(char* actuator)
-{
+bool LTEmModem::listen(char* actuator) {
 	char buffer[255];
 	
 	//sprintf(buffer, "device/%s/asset/%s/feed", _credentials->getDeviceId(), actuator);
@@ -442,13 +579,11 @@ bool LTEmModem::listen(char* actuator)
 	return subscribeMqttMessage(buffer);
 }
 
-void LTEmModem::process()
-{
+void LTEmModem::process() {
 	readMqttMessage();
 }
 
-void LTEmModem::initBuffer()
-{
+void LTEmModem::initBuffer() {
     // make sure the buffers are only initialized once
     if (!_isBufferInitialized) {
         this->_inputBuffer = static_cast<char*>(malloc(this->_inputBufferSize));
@@ -457,16 +592,14 @@ void LTEmModem::initBuffer()
     }
 }
 
-void LTEmModem::setTxEnablePin(int8_t txEnablePin)
-{
+void LTEmModem::setTxEnablePin(int8_t txEnablePin) {
      if (_txEnablePin != -1) {
         pinMode(_txEnablePin, OUTPUT);
         digitalWrite(_txEnablePin, LOW);
     }
 }
 
-bool LTEmModem::connect()
-{	
+bool LTEmModem::connect() {	
 	print("AT+CGDCONT=1,\"IP\",\"");					//connect to the apn network
 	print(_apn);
 	println("\"");
@@ -484,8 +617,7 @@ bool LTEmModem::connect()
 	return true;
 }
 
-bool LTEmModem::publishMqttMessage(const char* topic, double value)
-{
+bool LTEmModem::publishMqttMessage(const char* topic, double value) {
 	purgeAllResponsesRead();
 	_lastError = "";
 	
@@ -511,8 +643,7 @@ bool LTEmModem::publishMqttMessage(const char* topic, double value)
 	return ok;
 }
 
-bool LTEmModem::publishMqttMessage(const char* topic, int value)
-{
+bool LTEmModem::publishMqttMessage(const char* topic, int value) {
 	purgeAllResponsesRead();
 	
     print("AT+UMQTTC=2,0,0,\"");
@@ -537,14 +668,12 @@ bool LTEmModem::publishMqttMessage(const char* topic, int value)
 	return ok;
 }
 
-bool LTEmModem::publishMqttMessage(const char* topic, char* value, bool json)
-{
+bool LTEmModem::publishMqttMessage(const char* topic, char* value, bool json) {
 	purgeAllResponsesRead();
 	
     print("AT+UMQTTC=2,0,0,\"");
 	
-	if (json)
-	{
+	if (json) {
 		print("device/");
 		print(_credentials->getDeviceId());
 		print("/asset/");
@@ -554,8 +683,7 @@ bool LTEmModem::publishMqttMessage(const char* topic, char* value, bool json)
 		print(value);
 		print("\"");
 	}
-	else
-	{
+	else {
 		print(topic);
 		print("\",");
 		print("\"{\"value\":\"");
@@ -579,8 +707,7 @@ bool LTEmModem::publishMqttMessage(const char* topic, char* value, bool json)
 	return ok;
 }
 
-bool LTEmModem::publishMqttMessage(const char* topic, unsigned char* value, int size)
-{
+bool LTEmModem::publishMqttMessage(const char* topic, unsigned char* value, int size) {
 	purgeAllResponsesRead();
 	
     print("AT+UMQTTC=2,0,1,1,\"");
@@ -611,8 +738,7 @@ bool LTEmModem::publishMqttMessage(const char* topic, unsigned char* value, int 
 	return ok;
 }
 
-bool LTEmModem::publishMqttMessage(const char* topic, GeoLocation* geoLocation)
-{
+bool LTEmModem::publishMqttMessage(const char* topic, GeoLocation* geoLocation) {
 	purgeAllResponsesRead();
 	
     print("AT+UMQTTC=2,0,0,\"");
@@ -643,8 +769,7 @@ bool LTEmModem::publishMqttMessage(const char* topic, GeoLocation* geoLocation)
 
 
 
-bool LTEmModem::subscribeMqttMessage(const char* topic)
-{
+bool LTEmModem::subscribeMqttMessage(const char* topic) {
 	purgeAllResponsesRead();
 	
     print("AT+UMQTTC=4,0,\"");
@@ -675,8 +800,7 @@ bool LTEmModem::subscribeMqttMessage(const char* topic)
 	return ok;
 }
 
-bool LTEmModem::readMqttMessage()
-{
+bool LTEmModem::readMqttMessage() {
 	bool ok = false;
 	int value1 = 0;
 	int value2 = 0;
@@ -690,31 +814,27 @@ bool LTEmModem::readMqttMessage()
 	return ok;
 }
 
-void LTEmModem::purgeAllResponsesRead()
-{
+void LTEmModem::purgeAllResponsesRead() {
     uint32_t start = millis();
 
     // make sure all the responses within the timeout have been read
     while ((readResponse(0, 1000) != ResponseTimeout) && !is_timedout(start, 2000)) {}
 }
 
-bool LTEmModem::setRadioActive(bool on)
-{
+bool LTEmModem::setRadioActive(bool on) {
     print("AT+CFUN=");										// sets the MT to full functionality
     println(on ? "1" : "0");
 
     return (readResponse() == ResponseOK);
 }
 
-bool LTEmModem::isAlive()
-{
+bool LTEmModem::isAlive() {
     println("AT");
 
     return (readResponse(NULL, 450) == ResponseOK);
 }
 
-void LTEmModem::reboot()
-{
+void LTEmModem::reboot() {
     println("AT+CFUN=15"); 									// reset modem + sim
     
     // wait up to 2000ms for the modem to come up
@@ -723,14 +843,12 @@ void LTEmModem::reboot()
     while ((readResponse() != ResponseOK) && !is_timedout(start, 5000)) { }
 }
 
-bool LTEmModem::isConnected()
-{
+bool LTEmModem::isConnected() {
     uint8_t value = 0;
 
     println("AT+CGATT?");
 
-    if (readResponse<uint8_t, uint8_t>(_cgattParser, &value, NULL, 0, 10 * 1000) == ResponseOK) 
-	{
+    if (readResponse<uint8_t, uint8_t>(_cgattParser, &value, NULL, 0, 10 * 1000) == ResponseOK) {
         return (value == 1);
 	}
     else
@@ -738,8 +856,7 @@ bool LTEmModem::isConnected()
 }
 
 // Turns the modem on and returns true if successful.
-bool LTEmModem::on()
-{
+bool LTEmModem::on() {
 	if (_onOffPin >= 0) {
         digitalWrite(_onOffPin, HIGH);
     }
@@ -780,8 +897,7 @@ bool LTEmModem::on()
 }
 
 // Turns the modem off and returns true if successful.
-bool LTEmModem::off()
-{
+bool LTEmModem::off() {
     // No matter if it is on or off, turn it off.
     if (_onoff) {
         _onoff->off();
@@ -793,8 +909,7 @@ bool LTEmModem::off()
 }
 
 // Returns true if the modem is on.
-bool LTEmModem::isOn() const
-{
+bool LTEmModem::isOn() const {
     if (_onoff) {
         return _onoff->isOn();
     }
@@ -803,8 +918,7 @@ bool LTEmModem::isOn() const
     return true;
 }
 
-void LTEmModem::setTxPowerIfAvailable(bool on)
-{
+void LTEmModem::setTxPowerIfAvailable(bool on) {
 	_monitor->print("Setting TX power to: ");
 	_monitor->println(on);
 	
@@ -813,8 +927,7 @@ void LTEmModem::setTxPowerIfAvailable(bool on)
     }
 }
 
-int LTEmModem::createSocket(uint16_t localPort)
-{
+int LTEmModem::createSocket(uint16_t localPort) {
 	print("AT+USOCR=17,");
 	println(localPort);
     
@@ -827,18 +940,14 @@ int LTEmModem::createSocket(uint16_t localPort)
     return SOCKET_FAIL;
 }
 
-int LTEmModem::createTCPSocket(uint16_t localPort)
-{
+int LTEmModem::createTCPSocket(uint16_t localPort) {
 	int value1 = 0;
 	char* value2;
 		
 	println("AT+CGPADDR=1");
 	
-	if (readResponse<int, char*>(_cgpAddrParser, &value1, &value2) == ResponseOK)
-	{
+	if (readResponse<int, char*>(_cgpAddrParser, &value1, &value2) == ResponseOK) {
 		_ipAddress = value2;
-		_monitor->print("your ip-address: ");
-		_monitor->println(_ipAddress);
 	}
 
 	print("AT+USOCR=6,");
@@ -846,16 +955,14 @@ int LTEmModem::createTCPSocket(uint16_t localPort)
 
 	uint8_t socket;
 
-	if (readResponse<uint8_t, uint8_t>(_createSocketParser, &socket, NULL) == ResponseOK) 
-	{
+	if (readResponse<uint8_t, uint8_t>(_createSocketParser, &socket, NULL) == ResponseOK) {
 		return socket;
 	}
 
 	return SOCKET_FAIL;
 }
 
-bool LTEmModem::setUpTCP(uint8_t socket, const char* remoteIP, const uint16_t remotePort)
-{
+bool LTEmModem::setUpTCP(uint8_t socket, const char* remoteIP, const uint16_t remotePort) {
     print("AT+USOCO=");
     print(socket);
     print(',');
@@ -868,8 +975,7 @@ bool LTEmModem::setUpTCP(uint8_t socket, const char* remoteIP, const uint16_t re
     return readResponse() == ResponseOK;
 }
 
-ResponseTypes LTEmModem::_createSocketParser(ResponseTypes& response, const char* buffer, size_t size,uint8_t* socket, uint8_t* dummy)
-{
+ResponseTypes LTEmModem::_createSocketParser(ResponseTypes& response, const char* buffer, size_t size,uint8_t* socket, uint8_t* dummy) {
     if (!socket) {
         return ResponseError;
     }
@@ -901,8 +1007,7 @@ ResponseTypes LTEmModem::_createSocketParser(ResponseTypes& response, const char
     return ResponseError;
 }
 
-ResponseTypes LTEmModem::_nconfigParser(ResponseTypes& response, const char* buffer, size_t size, bool* nconfigEqualsArray, uint8_t* dummy)
-{
+ResponseTypes LTEmModem::_nconfigParser(ResponseTypes& response, const char* buffer, size_t size, bool* nconfigEqualsArray, uint8_t* dummy) {
     if (!nconfigEqualsArray) {
         return ResponseError;
     }
@@ -927,8 +1032,7 @@ ResponseTypes LTEmModem::_nconfigParser(ResponseTypes& response, const char* buf
     return ResponseError;
 }
 
-ResponseTypes LTEmModem::_csqParser(ResponseTypes& response, const char* buffer, size_t size, int* rssi, int* ber)
-{
+ResponseTypes LTEmModem::_csqParser(ResponseTypes& response, const char* buffer, size_t size, int* rssi, int* ber) {
     if (!rssi || !ber) {
         return ResponseError;
     }
@@ -940,8 +1044,7 @@ ResponseTypes LTEmModem::_csqParser(ResponseTypes& response, const char* buffer,
     return ResponseError;
 }
 
-ResponseTypes LTEmModem::_cgattParser(ResponseTypes& response, const char* buffer, size_t size, uint8_t* result, uint8_t* dummy)
-{
+ResponseTypes LTEmModem::_cgattParser(ResponseTypes& response, const char* buffer, size_t size, uint8_t* result, uint8_t* dummy) {
     if (!result) {
         return ResponseError;
     }
@@ -956,8 +1059,7 @@ ResponseTypes LTEmModem::_cgattParser(ResponseTypes& response, const char* buffe
     return ResponseError;
 }
 
-ResponseTypes LTEmModem::_umqttcParser(ResponseTypes& response, const char* buffer, size_t size, int* value1, int* value2)
-{
+ResponseTypes LTEmModem::_umqttcParser(ResponseTypes& response, const char* buffer, size_t size, int* value1, int* value2) {
 	if (!value1 || !value2) {
         return ResponseError;
     }
@@ -969,8 +1071,7 @@ ResponseTypes LTEmModem::_umqttcParser(ResponseTypes& response, const char* buff
     return ResponseError;
 }
 
-ResponseTypes LTEmModem::_uumqttcParser(ResponseTypes& response, const char* buffer, size_t size, int* value1, int* value2)
-{
+ResponseTypes LTEmModem::_uumqttcParser(ResponseTypes& response, const char* buffer, size_t size, int* value1, int* value2) {
 	if (!value1 || !value2) {
         return ResponseError;
     }
@@ -982,8 +1083,7 @@ ResponseTypes LTEmModem::_uumqttcParser(ResponseTypes& response, const char* buf
     return ResponseError;
 }
 
-ResponseTypes LTEmModem::_umqttParser(ResponseTypes& response, const char* buffer, size_t size, int* value1, int* value2)
-{
+ResponseTypes LTEmModem::_umqttParser(ResponseTypes& response, const char* buffer, size_t size, int* value1, int* value2) {
 	if (!value1 || !value2) {
         return ResponseError;
     }
@@ -995,8 +1095,7 @@ ResponseTypes LTEmModem::_umqttParser(ResponseTypes& response, const char* buffe
     return ResponseError;
 }
 
-ResponseTypes LTEmModem::_umqttTopicParser(ResponseTypes& response, const char* buffer, size_t size, int* value1, int* dummy)
-{
+ResponseTypes LTEmModem::_umqttTopicParser(ResponseTypes& response, const char* buffer, size_t size, int* value1, int* dummy) {
 	if (!value1) {
         return ResponseError;
     }
@@ -1008,8 +1107,19 @@ ResponseTypes LTEmModem::_umqttTopicParser(ResponseTypes& response, const char* 
     return ResponseError;
 }
 
-ResponseTypes LTEmModem::_cedrxParser(ResponseTypes& response, const char* buffer, size_t size, int* value1, char** value2)
-{
+ResponseTypes LTEmModem::_uuhttpParser(ResponseTypes& response, const char* buffer, size_t size, int* value1, int* value2) {
+	if (!value1 || !value2) {
+        return ResponseError;
+    }
+
+    if (sscanf(buffer, "+UUHTTPCR: 0,%d,%d", value1, value2) == 2) {		
+        return ResponseEmpty;
+    }
+
+    return ResponseError;
+}
+
+ResponseTypes LTEmModem::_cedrxParser(ResponseTypes& response, const char* buffer, size_t size, int* value1, char** value2) {
 	if (!value1 || !value2) {
         return ResponseError;
     }
@@ -1021,8 +1131,19 @@ ResponseTypes LTEmModem::_cedrxParser(ResponseTypes& response, const char* buffe
     return ResponseError;
 }
 
-ResponseTypes LTEmModem::_cgpAddrParser(ResponseTypes& response, const char* buffer, size_t size, int* value1, char** value2)
-{
+ResponseTypes LTEmModem::_ceregParser(ResponseTypes& response, const char* buffer, size_t size, int* value1, int* value2) {
+	if (!value1 || !value2) {
+        return ResponseError;
+    }
+	
+	if (sscanf(buffer, "+CEREG: %d,%d", value1, value2) == 2) {
+		return ResponseEmpty;
+    }
+
+    return ResponseError;
+}
+
+ResponseTypes LTEmModem::_cgpAddrParser(ResponseTypes& response, const char* buffer, size_t size, int* value1, char** value2) {
 	if (!value1 || !value2) {
         return ResponseError;
     }
@@ -1046,153 +1167,130 @@ ResponseTypes LTEmModem::_cgpAddrParser(ResponseTypes& response, const char* buf
     return ResponseError;
 }
 
-size_t LTEmModem::print(const char buffer[])
-{
+size_t LTEmModem::print(const char buffer[]) {
     if (_fullDebug) _monitor->print(buffer);
 
     return _serial->print(buffer);
 }
 
-size_t LTEmModem::print(char value)
-{
+size_t LTEmModem::print(char value) {
 	if (_fullDebug) _monitor->print(value);
 
     return _serial->print(value);
-};
+}
 
-size_t LTEmModem::print(unsigned char value, int base)
-{
+size_t LTEmModem::print(unsigned char value, int base) {
     if (_fullDebug) _monitor->print(value, base);
 
     return _serial->print(value, base);
-};
+}
 
-size_t LTEmModem::print(int value, int base)
-{
+size_t LTEmModem::print(int value, int base) {
     if (_fullDebug) _monitor->print(value, base);
 
     return _serial->print(value, base);
-};
+}
 
-size_t LTEmModem::print(unsigned int value, int base)
-{
+size_t LTEmModem::print(unsigned int value, int base) {
     if (_fullDebug) _monitor->print(value, base);
 
     return _serial->print(value, base);
-};
+}
 
-size_t LTEmModem::print(long value, int base)
-{
+size_t LTEmModem::print(long value, int base) {
     if (_fullDebug) _monitor->print(value, base);
 
     return _serial->print(value, base);
-};
+}
 
-size_t LTEmModem::print(unsigned long value, int base)
-{
+size_t LTEmModem::print(unsigned long value, int base) {
 	if (_fullDebug) _monitor->println(value, base);
 
     return _serial->print(value, base);
-};
+}
 
-size_t LTEmModem::print(double value, int digits)
-{
+size_t LTEmModem::print(double value, int digits) {
 	if (_fullDebug) _monitor->println(value, digits);
 
     return _serial->print(value, digits);
-};
+}
 
-size_t LTEmModem::println(const __FlashStringHelper* ifsh)
-{
+size_t LTEmModem::println(const __FlashStringHelper* ifsh) {
     size_t n = print(ifsh);
     n += println();
     return n;
 }
 
-size_t LTEmModem::println(const String& s)
-{
+size_t LTEmModem::println(const String& s) {
     size_t n = print(s);
     n += println();
     return n;
 }
 
-size_t LTEmModem::println(const char c[])
-{
+size_t LTEmModem::println(const char c[]) {
     size_t n = print(c);
     n += println();
     return n;
 }
 
-size_t LTEmModem::println(char c)
-{
+size_t LTEmModem::println(char c) {
     size_t n = print(c);
     n += println();
     return n;
 }
 
-size_t LTEmModem::println(unsigned char b, int base)
-{
+size_t LTEmModem::println(unsigned char b, int base) {
     size_t i = print(b, base);
     return i + println();
 }
 
-size_t LTEmModem::println(int num, int base)
-{
+size_t LTEmModem::println(int num, int base) {
     size_t i = print(num, base);
     return i + println();
 }
 
-size_t LTEmModem::println(unsigned int num, int base)
-{
+size_t LTEmModem::println(unsigned int num, int base) {
     size_t i = print(num, base);
     return i + println();
 }
 
-size_t LTEmModem::println(long num, int base)
-{
+size_t LTEmModem::println(long num, int base) {
     size_t i = print(num, base);
     return i + println();
 }
 
-size_t LTEmModem::println(unsigned long num, int base)
-{
+size_t LTEmModem::println(unsigned long num, int base) {
     size_t i = print(num, base);
     return i + println();
 }
 
-size_t LTEmModem::println(double num, int digits)
-{
+size_t LTEmModem::println(double num, int digits) {
     if (_fullDebug) _monitor->println(num);
 
     return _serial->println(num, digits);
 }
 
-size_t LTEmModem::println(const Printable& x)
-{
+size_t LTEmModem::println(const Printable& x) {
     size_t i = print(x);
     return i + println();
 }
 
-size_t LTEmModem::println(void)
-{
+size_t LTEmModem::println(void) {
     if (_fullDebug) _monitor->println();
     size_t i = print('\r');
 
     return i;
 }
 
-unsigned int LTEmModem::getDefaultBaudRate()
-{
+unsigned int LTEmModem::getDefaultBaudRate() {
 	return 115200;
 }
 
-bool LTEmModem::startsWith(const char* pre, const char* str)
-{
+bool LTEmModem::startsWith(const char* pre, const char* str) {
   return (strncmp(pre, str, strlen(pre)) == 0);
 }
 
-int LTEmModem::timedRead(uint32_t timeout) const
-{
+int LTEmModem::timedRead(uint32_t timeout) const {
     int c;
     uint32_t _startMillis = millis();
 
@@ -1209,8 +1307,7 @@ int LTEmModem::timedRead(uint32_t timeout) const
 
 ResponseTypes LTEmModem::readResponse(char* buffer, size_t size,
                                         CallbackMethodPtr parserMethod, void* callbackParameter, void* callbackParameter2,
-                                        size_t* outSize, uint32_t timeout)
-{
+                                        size_t* outSize, uint32_t timeout) {
     ResponseTypes response = ResponseNotFound;
     uint32_t from = NOW;
 
@@ -1228,8 +1325,7 @@ ResponseTypes LTEmModem::readResponse(char* buffer, size_t size,
                 _disableDiag = false;
             }
 
-			if (_fullDebug)
-			{
+			if (_fullDebug) {
 				_monitor->print("[rdResp]: ");
 				_monitor->println(buffer);
 			}
@@ -1237,32 +1333,28 @@ ResponseTypes LTEmModem::readResponse(char* buffer, size_t size,
 			if (buffer[0] == '\0' || buffer[0] == '\r')
 				continue;
 			
-			if (startsWith("AT+CGSN", buffer)) //getting imei
-			{
+			if (startsWith("AT+CGSN", buffer)) { //getting imei
 				char myBuffer[200];
 				readLn(myBuffer, 200, 250);
 				
 				_imei = &myBuffer[0];
 			}
 			
-			if (startsWith("AT+CCID", buffer)) //getting iccid
-			{
+			if (startsWith("AT+CCID", buffer)) { //getting iccid
 				char myBuffer[200];
 				readLn(myBuffer, 200, 250);
 				
 				_iccid = &myBuffer[7];
 			}
 			
-			if (startsWith("AT+CIMI", buffer))
-			{
+			if (startsWith("AT+CIMI", buffer)) {
 				char myBuffer[200];
 				readLn(myBuffer, 200, 250);
 				
 				_cimi = &myBuffer[0];
 			}
 			
-			if (startsWith("AT+CGMR", buffer)) //getting firmware version
-			{
+			if (startsWith("AT+CGMR", buffer)) { //getting firmware version
 				char myBuffer[200];
 				readLn(myBuffer, 200, 250);
 				
@@ -1378,8 +1470,7 @@ ResponseTypes LTEmModem::readResponse(char* buffer, size_t size,
     return ResponseTimeout;
 }
 
-size_t LTEmModem::readBytesUntil(char terminator, char* buffer, size_t length, uint32_t timeout)
-{
+size_t LTEmModem::readBytesUntil(char terminator, char* buffer, size_t length, uint32_t timeout) {
     if (length < 1) {
         return 0;
     }
@@ -1404,8 +1495,7 @@ size_t LTEmModem::readBytesUntil(char terminator, char* buffer, size_t length, u
     return index;
 }
 
-size_t LTEmModem::readBytes(uint8_t* buffer, size_t length, uint32_t timeout)
-{
+size_t LTEmModem::readBytes(uint8_t* buffer, size_t length, uint32_t timeout) {
     size_t count = 0;
 
     while (count < length) {
@@ -1424,8 +1514,7 @@ size_t LTEmModem::readBytes(uint8_t* buffer, size_t length, uint32_t timeout)
     return count;
 }
 
-size_t LTEmModem::readLn(char* buffer, size_t size, uint32_t timeout)
-{
+size_t LTEmModem::readLn(char* buffer, size_t size, uint32_t timeout) {
     // Use size-1 to leave room for a string terminator
     size_t len = readBytesUntil(SODAQ_AT_DEVICE_TERMINATOR[SODAQ_AT_DEVICE_TERMINATOR_LEN - 1], buffer, size - 1, timeout);
 
@@ -1443,21 +1532,18 @@ size_t LTEmModem::readLn(char* buffer, size_t size, uint32_t timeout)
 
 
 
-void LTEmModem::setOptions(Options* options)
-{
+void LTEmModem::setOptions(Options* options) {
 	
 }
 
-bool LTEmModem::send(Payload &payload)
-{
+bool LTEmModem::send(Payload &payload) {
 	String temp(payload.getString());
 
 	int index = temp.indexOf("|");
 	
 	bool ok;
 	
-	if (index == -1) //no json string
-	{
+	if (index == -1) { //no json string
 		char* Mqttstring_buff;
 		{
 			int length = strlen(_credentials->getDeviceId()) + 14;  // 14 fixed chars + deviceId
@@ -1470,8 +1556,7 @@ bool LTEmModem::send(Payload &payload)
 		
 		delete(Mqttstring_buff);
 	}
-	else
-	{
+	else {
 		String assetName = temp.substring(0, index);
 		String json = temp.substring(index+1);
 		

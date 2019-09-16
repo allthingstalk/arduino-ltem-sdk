@@ -6,7 +6,7 @@
 class APICredentials
 {
 	public:
-		APICredentials(char* space, char* deviceToken, char* deviceId);
+		APICredentials(char* space, char* deviceToken = NULL, char* deviceId = NULL);
 		
 		char* getSpace();
 		char* getDeviceToken();
