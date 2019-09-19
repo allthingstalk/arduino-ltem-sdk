@@ -55,7 +55,7 @@ class LTEmModem : public Device<LTEmOptions>
 		bool listen(char* actuator);
 		bool mqttConnected();
 		
-		bool registerDevice(char* deviceSecret);
+		bool registerDevice(const char* deviceSecret, const char* partnerId);
 		
 		void disconnect();
 		void process();

@@ -2,6 +2,7 @@
 #include "Utils.h"
 
 #include<String.h>
+#include <ArduinoJson.h>
 
 static inline bool is_timedout(uint32_t from, uint32_t nr_ms) __attribute__((always_inline));
 static inline bool is_timedout(uint32_t from, uint32_t nr_ms)
@@ -167,53 +168,17 @@ bool LTEmModem::init() {
 	}
 }
 
-bool LTEmModem::registerDevice(char* deviceSecret) {
+bool LTEmModem::registerDevice(const char* deviceSecret, const char* partnerId) {
 	bool ok = false;
 	int value1 = 0;
 	int value2 = 0;
-	
-	/*
-	println("AT+CMEE=2");		// result code disabled and ERROR used
-	if (readResponse() != ResponseOK)
-		return false;
-	
-	
-	println("AT+CFUN=15");		// reset modem
-	if (readResponse() != ResponseOK)
-		return false;
-	
-	if(!on())					//activate the modem
-	{
-		_lastError = "Could not activate modem";
-		return false;
-	}
-	
-	println("AT+CPIN?");		// check if pin is OK
-	readResponse();
-	
-	println("AT+CMGF=1");		//URC Text format
-	if (readResponse() != ResponseOK)
-		return false;
-	
-	println("AT+UDCONF=1,1");	//enable hex formatted string to be converted into binary data before sending to the socket
-	if (readResponse() != ResponseOK)
-		return false;
-	
-	println("AT+CTZU=1");		//enable automatic time zone
-	if (readResponse() != ResponseOK)
-		return false;
-	
-	println("AT+CGDCONT=1,\"IP\",\"\"");		
-	if (readResponse() != ResponseOK)
-		return false;
-	
-	println("AT+UAUTHREQ=1,0");	//No Authentication
-	if (readResponse() != ResponseOK)
-		return false;
-	
-	println("AT+CFUN=1");		//sets modem to full functionality
-	if (readResponse() != ResponseOK)
-		return false; */
+	char bufSecret[80];
+	char bufPartner[255];
+	char* secret = strdup(deviceSecret);
+	char* partner = strdup(partnerId);
+
+	sprintf(bufSecret, "{\"secret\": \"%s\"}", secret);
+	sprintf(bufPartner, "/partner/%s/register", partner);
 	
 	while (value1 != 0 || value2 != 1)	// wait until we are registered to the network
 	{
@@ -229,64 +194,50 @@ bool LTEmModem::registerDevice(char* deviceSecret) {
 	println("AT+CGACT?");		// check if we are attached
 	readResponse(); 
 	
-	//if (initTCP()) {			// make a tcp socket
-		println("AT+UDELFILE=\"postdata.txt\"");			//delete file with json format
-		readResponse();
-		
-		println("AT+UDELFILE=\"result.txt\"");			//delete file with json format
-		readResponse();
-		
-		println("AT+UDWNFILE=\"postdata.txt\",29");			//create file
-		readResponse();
-		
-		println("{\"secret\": \"352753090834365\"}");
-		readResponse();
-		
-		println("AT+URDFILE=\"postdata.txt\"");				//read data written to file 
-		readResponse();
-		
-		println("AT+UHTTP=0 ");								//reset the HTTP profile #0
-		readResponse();
-		
-		print("AT+UHTTP=0,1,\"");
-		print(_credentials->getSpace());
-		println("\"");
-		
-		if (readResponse() != ResponseOK)
-			return false;
+	println("AT+UDELFILE=\"postdata.txt\"");			//delete file with json format
+	readResponse();
 	
-		println("AT+UHTTP=0,9,\"0:content-type:application/json\"");	//set header configuration
-		if (readResponse() != ResponseOK)
-			return false;
-		
-		//println("AT+UHTTP=0,5,80");										//set the port of the HTTP request to 80
-		//if (readResponse() != ResponseOK)
-		//	return false;
-		
-		//println("AT+UHTTPC=0,5,\"/partner/Alain/register\",\"result.txt\",\"{\"secret\": \"352753090600121\"}\",6,\"Content-Type: application/json\"");
-		//println("AT+UHTTPC=0,5,\"/partner/Alain/register\",\"result.txt\",\"{\"secret\": \"352753090600121\"}\",1");
+	println("AT+UDELFILE=\"result.txt\"");			//delete file with json format
+	readResponse();
+	
+	println("AT+UDWNFILE=\"postdata.txt\",29");			//create file
+	readResponse();
+	
+	println(bufSecret);
+	readResponse();
+	
+	println("AT+URDFILE=\"postdata.txt\"");				//read data written to file 
+	readResponse();
+	
+	println("AT+UHTTP=0 ");								//reset the HTTP profile #0
+	readResponse();
+	
+	if (startsWith("spicy", _credentials->getSpace())) {
+		println("AT+UHTTP=0,0,\"104.40.211.17\"");
+	}
+	else {
+		println("AT+UHTTP=0,0,\"40.68.172.187\"");
+	}
+	if (readResponse() != ResponseOK)
+		return false;
+	
+	print("AT+UHTTP=0,9,\"0:Host:");
+	print(_credentials->getSpace());
+	println("\"");
+	if (readResponse() != ResponseOK)
+		return false;
+	
+	print("AT+UHTTPC=0,4,\"");
+	print(bufPartner);
+	println("\", \"result.txt\", \"postdata.txt\", 4");	//Submit a post command in json format and store the answer in result.txt.
+	if (readResponse() != ResponseOK)
+		return false;
+	
+	readResponse<int, int>(_uuhttpParser, &value1, &value2);	//wait for response from post command
 
-		println("AT+UHTTPC=0,4,\"/partner/Alain/register/\", \"result.txt\", \"postdata.txt\", 4");	//Submit a post command in json format and store the answer in result.txt.
-		
-		//println("AT+UHTTPC=0,4,\"/efa80308-d1ee-42f6-866f-34c1eb66d933/\", \"result.txt\", \"postdata.txt\", 4");	//Submit a post command in json format and store the answer in result.txt.
-		if (readResponse() != ResponseOK)
-			return false;
-		
-		value1 = 0;
-		value2 = 0;
-		readResponse<int, int>(_uuhttpParser, &value1, &value2);	//wait for response from post command
-		
-		println("AT+URDFILE=\"result.txt\"");				//read data written to file 
-		readResponse();
-		
-		if (value1 != 4 || value2 != 1) {
-			return false;
-		}
-		else {
-			println("AT+URDFILE=\"post.ffs\"");
-			readResponse();
-		}
-	//}
+	println("AT+URDFILE=\"result.txt\"");				//read data written to file 
+	if (readResponse() != ResponseOK)
+		return false;
 	
 	return true;
 }
@@ -349,7 +300,6 @@ bool LTEmModem::initTCP() {
 bool LTEmModem::initMQTT() {
 	if (cleanMQTTSession() && setVerboseMessage() && setClientId() && setMQTTPort() &&
 		setMQTTServer() && setUsernamePassword() && setMQTTTimeoutPeriod()) {
-	
 		
 		return loginMQTT();
 	}
@@ -1401,6 +1351,62 @@ ResponseTypes LTEmModem::readResponse(char* buffer, size_t size,
 
                 continue;
             }
+			
+			if (startsWith("{\"message\":[{\"error\":\"", buffer)) {
+				char myBuffer[200];
+				
+				String response = buffer;
+				int index = response.indexOf("\"}]");
+				
+				String errorMessage = response.substring(22, index);
+				errorMessage.toCharArray(myBuffer, 200);
+				
+				_lastError = myBuffer;
+					
+				return ResponseError;
+			}
+			
+			if (startsWith("{\"id\":", buffer)) {
+				DynamicJsonBuffer jsonBuffer;
+				JsonObject& root = jsonBuffer.parseObject(buffer);
+				
+				char* deviceId = strdup(root["id"]);
+				char* deviceToken = strdup(root["token"]);
+				
+				APICredentials credentials(_credentials->getSpace(), deviceToken, deviceId);
+				_credentials = &credentials;
+				
+				println("AT+CEDRXS=0");								//use of eDRX disabled
+				if (readResponse() != ResponseOK) {
+					_lastError = "Failed to disable eDRX";
+					return ResponseError;
+				}
+				
+				println("ATE0");									//turn echo off
+				if (readResponse() != ResponseOK)
+					return ResponseError;
+				
+				println("AT+URAT=7");								//use LTE Cat M1
+				if (readResponse() != ResponseOK) {
+					_lastError = "Failed to use LTE Cat M1";
+					return ResponseError;
+				}
+				
+				println("AT+CMEE=2");								//<err> result code enabled and verbose <err> values used
+				if (readResponse() != ResponseOK)
+					return ResponseError;
+				
+				_monitor->println("Set radio active");
+				if(!setRadioActive(true)) {							//sets the MT to full functionality
+					_lastError = "Failed to activate radio";
+					return ResponseError;
+				}
+	
+				if (!initMQTT())
+					return ResponseError;
+				else
+					return ResponseOK;
+			}
 			
 			if (startsWith("+UUMQTTCM: 6", buffer)) {  //handle MQTT message
 				process();
