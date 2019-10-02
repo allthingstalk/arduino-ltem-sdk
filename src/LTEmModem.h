@@ -39,8 +39,10 @@ class LTEmModem : public Device<LTEmOptions>
 	
 	public:
 		LTEmModem(HardwareSerial &serial, Stream &monitor, APICredentials &credentials, bool fullDebug = false, ATT_CALLBACK_SIGNATURE = NULL);
-		
+	
 		bool init(char *apn);
+		bool init();
+		
 		unsigned int getDefaultBaudRate();
 		void setOptions(Options* options);
 		bool send(Payload &payload);
@@ -53,10 +55,13 @@ class LTEmModem : public Device<LTEmOptions>
 		bool listen(char* actuator);
 		bool mqttConnected();
 		
+		bool registerDevice(const char* deviceSecret, const char* partnerId);
+		
 		void disconnect();
 		void process();
 		
 		char* getLastError();
+		char* getIMEI();
 		
 		using Device<LTEmOptions>::send;
 		
@@ -99,6 +104,7 @@ class LTEmModem : public Device<LTEmOptions>
 		APICredentials* _credentials;
 		
 		int _receivedUDPResponseSocket = 0;
+		int _socketId;
 		
 		int8_t _onOffPin;
 		int8_t _txEnablePin;
@@ -117,9 +123,22 @@ class LTEmModem : public Device<LTEmOptions>
 		char* _cimi;
 		char* _firmware;
 		char* _lastError = "";
+		// const char* _mySpace;
+		// const char* _myDeviceId = "";
+		// char* _myDeviceToken = "";
 		
 		size_t _inputBufferSize;
 		size_t _pendingUDPBytes = 0;
+		
+		//MQTT SECTION
+		bool cleanMQTTSession();
+		bool setVerboseMessage();
+		bool setClientId();
+		bool setMQTTPort();
+		bool setMQTTServer();
+		bool setUsernamePassword();
+		bool setMQTTTimeoutPeriod();
+		bool loginMQTT();
 		
 		bool publishMqttMessage(const char* topic, double value);
 		bool publishMqttMessage(const char* topic, int value);
@@ -172,6 +191,8 @@ class LTEmModem : public Device<LTEmOptions>
 		static ResponseTypes _umqttTopicParser(ResponseTypes& response, const char* buffer, size_t size, int* value1, int* dummy); //UMQTTWTOPIC
 		static ResponseTypes _cgpAddrParser(ResponseTypes& response, const char* buffer, size_t size, int* value1, char** value2);
 		static ResponseTypes _cedrxParser(ResponseTypes& response, const char* buffer, size_t size, int* value1, char** value2);
+		static ResponseTypes _ceregParser(ResponseTypes& response, const char* buffer, size_t size, int* value1, int* value2);
+		static ResponseTypes _uuhttpParser(ResponseTypes& response, const char* buffer, size_t size, int* value1, int* value2);
 	
 		ResponseTypes readResponse(char* buffer, size_t size, size_t* outSize, uint32_t timeout = SODAQ_AT_DEVICE_DEFAULT_READ_MS)
         {
