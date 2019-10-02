@@ -37,7 +37,15 @@
 #include "keys.h"
 
 #define debugSerial SerialUSB
-#define ltemSerial SerialSARA
+
+//comment line below if you want to use MKR1500 board
+#define SODAQ_SFF_AFF
+
+#ifdef SODAQ_SFF_AFF
+  #define ltemSerial Serial1
+#else
+  #define ltemSerial SerialSARA
+#endif
 
 void callback(const char* data);
 
