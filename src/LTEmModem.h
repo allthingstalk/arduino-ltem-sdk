@@ -123,6 +123,9 @@ class LTEmModem : public Device<LTEmOptions>
 		char* _cimi;
 		char* _firmware;
 		char* _lastError = "";
+		// const char* _mySpace;
+		// const char* _myDeviceId = "";
+		// char* _myDeviceToken = "";
 		
 		size_t _inputBufferSize;
 		size_t _pendingUDPBytes = 0;

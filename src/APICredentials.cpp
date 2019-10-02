@@ -1,23 +1,33 @@
 #include "APICredentials.h"
 
-APICredentials::APICredentials(char* broker, char* deviceToken, char* deviceId)
+APICredentials::APICredentials(const char* broker, const char* deviceToken, const char* deviceId)
 {
 	_space = broker;
 	_deviceToken = deviceToken;
 	_deviceId = deviceId;
 }
 		
-char* APICredentials::getSpace()
+const char* APICredentials::getSpace()
 {
 	return _space;
 }
 
-char* APICredentials::getDeviceToken()
+const char* APICredentials::getDeviceToken()
 {
 	return _deviceToken;
 }
 
-char* APICredentials::getDeviceId()
+const char* APICredentials::getDeviceId()
 {
 	return _deviceId;
+}
+
+void APICredentials::setDeviceToken(const char* deviceToken)
+{
+	_deviceToken = deviceToken;
+}
+
+void APICredentials::setDeviceId(const char* deviceId)
+{
+	_deviceId = deviceId;
 }

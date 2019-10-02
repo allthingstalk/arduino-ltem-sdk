@@ -180,6 +180,8 @@ bool LTEmModem::registerDevice(const char* deviceSecret, const char* partnerId) 
 	sprintf(bufSecret, "{\"secret\": \"%s\"}", secret);
 	sprintf(bufPartner, "/partner/%s/register", partner);
 	
+	int length = strlen(bufSecret);
+	
 	while (value1 != 0 || value2 != 1)	// wait until we are registered to the network
 	{
 		println("AT+CEREG?");
@@ -197,10 +199,11 @@ bool LTEmModem::registerDevice(const char* deviceSecret, const char* partnerId) 
 	println("AT+UDELFILE=\"postdata.txt\"");			//delete file with json format
 	readResponse();
 	
-	println("AT+UDELFILE=\"result.txt\"");			//delete file with json format
+	println("AT+UDELFILE=\"result.txt\"");				//delete file with json format
 	readResponse();
 	
-	println("AT+UDWNFILE=\"postdata.txt\",29");			//create file
+	print("AT+UDWNFILE=\"postdata.txt\",");
+	println(length);			//create file
 	readResponse();
 	
 	println(bufSecret);
@@ -213,6 +216,7 @@ bool LTEmModem::registerDevice(const char* deviceSecret, const char* partnerId) 
 	readResponse();
 	
 	if (startsWith("spicy", _credentials->getSpace())) {
+	//if (startsWith("spicy", _mySpace)) {
 		println("AT+UHTTP=0,0,\"104.40.211.17\"");
 	}
 	else {
@@ -223,6 +227,7 @@ bool LTEmModem::registerDevice(const char* deviceSecret, const char* partnerId) 
 	
 	print("AT+UHTTP=0,9,\"0:Host:");
 	print(_credentials->getSpace());
+	//print(_mySpace);
 	println("\"");
 	if (readResponse() != ResponseOK)
 		return false;
@@ -292,12 +297,13 @@ bool LTEmModem::initTCP() {
 	
 	if (socketID != SOCKET_FAIL) {	
 		return setUpTCP(socketID, _credentials->getSpace(), 443); 
+		//return setUpTCP(socketID, _mySpace, 443);
 	}
 	else 
 		return false;
 }
 
-bool LTEmModem::initMQTT() {
+bool LTEmModem::initMQTT() {				
 	if (cleanMQTTSession() && setVerboseMessage() && setClientId() && setMQTTPort() &&
 		setMQTTServer() && setUsernamePassword() && setMQTTTimeoutPeriod()) {
 		
@@ -329,7 +335,7 @@ bool LTEmModem::setVerboseMessage() {
 	int value1 = 0;
 	int value2 = 0;
 	
-	println("AT+UMQTTC=7,0");					//sets the terse/verbose format for received messages
+	println("AT+UMQTTC=7,1");					//sets the terse/verbose format for received messages
 	
 	if (readResponse<int, int>(_umqttcParser, &value1, &value2) == ResponseOK) {
         ok = value1 == 7 && value2 == 1;
@@ -402,6 +408,7 @@ bool LTEmModem::setMQTTServer() {
     print(',');
     print("\"");
     print(_credentials->getSpace());
+	//print(_mySpace);
     print("\"");
     print(',');
     print(1883);
@@ -429,6 +436,7 @@ bool LTEmModem::setUsernamePassword() {
     print(',');
     print("\"");
     print(_credentials->getDeviceToken());
+	//print(_myDeviceToken);
     print("\"");
     print(',');
     print("\"");
@@ -501,6 +509,7 @@ bool LTEmModem::loginMQTT() {
 bool LTEmModem::mqttConnected() {
 	print("AT+UMQTTC=8,\"");
 	print(_credentials->getSpace());
+	//print(_mySpace);
 	println("\"");
 	
 	bool ok = false;
@@ -521,10 +530,11 @@ bool LTEmModem::mqttConnected() {
 }
 
 bool LTEmModem::listen(char* actuator) {
-	char buffer[255];
+	static char buffer[300];
+	const char* const deviceId = _credentials->getDeviceId();
 	
 	//sprintf(buffer, "device/%s/asset/%s/feed", _credentials->getDeviceId(), actuator);
-	sprintf(buffer, "device/%s/asset/%s/command", _credentials->getDeviceId(), actuator);
+	sprintf(buffer, "device/%s/asset/%s/command", deviceId, actuator);
 	
 	return subscribeMqttMessage(buffer);
 }
@@ -626,6 +636,7 @@ bool LTEmModem::publishMqttMessage(const char* topic, char* value, bool json) {
 	if (json) {
 		print("device/");
 		print(_credentials->getDeviceId());
+		//print(_myDeviceId);
 		print("/asset/");
 		print(topic);
 		print("/state");
@@ -1260,6 +1271,8 @@ ResponseTypes LTEmModem::readResponse(char* buffer, size_t size,
                                         size_t* outSize, uint32_t timeout) {
     ResponseTypes response = ResponseNotFound;
     uint32_t from = NOW;
+	
+	static char asset[50];
 
     do {
         // 250ms,  how many bytes at which baudrate?
@@ -1370,50 +1383,86 @@ ResponseTypes LTEmModem::readResponse(char* buffer, size_t size,
 				DynamicJsonBuffer jsonBuffer;
 				JsonObject& root = jsonBuffer.parseObject(buffer);
 				
-				char* deviceId = strdup(root["id"]);
-				char* deviceToken = strdup(root["token"]);
+				char space[255];
+				char token[100];
+				char id[255];
+				char status[100];
 				
-				APICredentials credentials(_credentials->getSpace(), deviceToken, deviceId);
-				_credentials = &credentials;
+				strcpy(space, _credentials->getSpace());
+				strcpy(token, (const char*)root["token"]);
+				strcpy(id, (const char*)root["id"]);
+				strcpy(status, (const char*)root["status"]);
 				
-				println("AT+CEDRXS=0");								//use of eDRX disabled
-				if (readResponse() != ResponseOK) {
-					_lastError = "Failed to disable eDRX";
+				if (startsWith("approved", status)) {
+					APICredentials credentials(space, token, id);
+					_credentials = &credentials;
+					
+					println("AT+CEDRXS=0");								//use of eDRX disabled
+					if (readResponse() != ResponseOK) {
+						_lastError = "Failed to disable eDRX";
+						return ResponseError;
+					}
+					
+					println("ATE0");									//turn echo off
+					if (readResponse() != ResponseOK)
+						return ResponseError;
+					
+					println("AT+URAT=7");								//use LTE Cat M1
+					if (readResponse() != ResponseOK) {
+						_lastError = "Failed to use LTE Cat M1";
+						return ResponseError;
+					}
+					
+					println("AT+CMEE=2");								//<err> result code enabled and verbose <err> values used
+					if (readResponse() != ResponseOK)
+						return ResponseError;
+					
+					_monitor->println("Set radio active");
+					if(!setRadioActive(true)) {							//sets the MT to full functionality
+						_lastError = "Failed to activate radio";
+						return ResponseError;
+					}
+					
+					if (!initMQTT())
+						return ResponseError;
+					else
+						return ResponseOK;
+				}
+				else {
+					_lastError = status;
 					return ResponseError;
 				}
-				
-				println("ATE0");									//turn echo off
-				if (readResponse() != ResponseOK)
-					return ResponseError;
-				
-				println("AT+URAT=7");								//use LTE Cat M1
-				if (readResponse() != ResponseOK) {
-					_lastError = "Failed to use LTE Cat M1";
-					return ResponseError;
-				}
-				
-				println("AT+CMEE=2");								//<err> result code enabled and verbose <err> values used
-				if (readResponse() != ResponseOK)
-					return ResponseError;
-				
-				_monitor->println("Set radio active");
-				if(!setRadioActive(true)) {							//sets the MT to full functionality
-					_lastError = "Failed to activate radio";
-					return ResponseError;
-				}
-	
-				if (!initMQTT())
-					return ResponseError;
-				else
-					return ResponseOK;
 			}
 			
 			if (startsWith("+UUMQTTCM: 6", buffer)) {  //handle MQTT message
 				process();
 			}
 			
-			if (startsWith("{\"at\":", buffer)) {	//handle callback 
-				_callback(buffer);
+			if (startsWith("Topic:", buffer)) {
+				String response = buffer;
+				int index0 = response.indexOf("/asset/");
+				int index1 = response.lastIndexOf("/");
+				
+				String message = response.substring(index0 + 7, index1);
+				message.toCharArray(asset, 50);
+			}
+			
+			if (startsWith("Msg:{\"at\":", buffer)) {	//handle callback 
+				char myBuffer[500];
+				
+				String response = buffer;
+				int index = response.lastIndexOf("}");
+				
+				String message = response.substring(4, index);  //cut off Msg:
+				message.concat(",\"asset\":\"");
+				message.concat(asset);
+				message.concat("\"}");
+				message.toCharArray(myBuffer, 500);
+				_callback(myBuffer);
+				
+				purgeAllResponsesRead();
+				
+				return ResponseOK;
 			}
 
             if (startsWith("AT", buffer)) {
@@ -1549,18 +1598,22 @@ bool LTEmModem::send(Payload &payload) {
 	
 	bool ok;
 	
-	if (index == -1) { //no json string
-		char* Mqttstring_buff;
+	const char* const deviceId = _credentials->getDeviceId();  	//store deviceId in const
+	
+	if (index == -1) { //no json string			
+		char* buffer;
 		{
-			int length = strlen(_credentials->getDeviceId()) + 14;  // 14 fixed chars + deviceId
-			Mqttstring_buff = new char[length];
-			sprintf(Mqttstring_buff, "device/%s/state", _credentials->getDeviceId());
-			Mqttstring_buff[length-1] = 0;
+			int length = strlen(deviceId) + 14;  // 14 fixed chars + deviceId
+			buffer = new char[length];
+			sprintf(buffer, "device/%s/state", deviceId);
+			buffer[length-1] = 0;
 		}
 		
-		ok = publishMqttMessage(Mqttstring_buff, payload.getBytes(), payload.getSize());
+		ok = publishMqttMessage(buffer, payload.getBytes(), payload.getSize());
 		
-		delete(Mqttstring_buff);
+		delete(buffer);
+		
+		_credentials->setDeviceId(deviceId);   					//set deviceId back 
 	}
 	else {
 		String assetName = temp.substring(0, index);
@@ -1571,4 +1624,6 @@ bool LTEmModem::send(Payload &payload) {
 	
 	return ok;
 }
+
+
 
