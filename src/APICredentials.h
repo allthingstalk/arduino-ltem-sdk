@@ -6,16 +6,19 @@
 class APICredentials
 {
 	public:
-		APICredentials(char* space, char* deviceToken, char* deviceId);
+		APICredentials(const char* space, const char* deviceToken = NULL, const char* deviceId = NULL);
 		
-		char* getSpace();
-		char* getDeviceToken();
-		char* getDeviceId();
+		const char* getSpace();
+		const char* getDeviceToken();
+		const char* getDeviceId();
+		
+		void setDeviceToken(const char* deviceToken);
+		void setDeviceId(const char* deviceId);
 		
 	private:
-		char* _space;
-		char* _deviceToken;
-		char* _deviceId;
+		const char* _space;
+		const char* _deviceToken;
+		const char* _deviceId;
 };
 
 #endif
