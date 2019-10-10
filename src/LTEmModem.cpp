@@ -15,6 +15,8 @@ typedef struct NameValuePair {
     bool Value;
 } NameValuePair;
 
+static const char* deviceId;
+
 const uint8_t nConfigCount = 3;
 static NameValuePair nConfig[nConfigCount] = {
     { "AUTOCONNECT", true },
@@ -87,6 +89,8 @@ bool LTEmModem::init(char *apn) {
 	_monitor->print("IMEI number: ");
 	_monitor->println(_imei);
 	
+	
+	
 	println("AT+CCID"); 								//getting iccid number
 	if (readResponse() != ResponseOK) {
 		_lastError = "Couldn't get iccid number";
@@ -144,6 +148,11 @@ bool LTEmModem::init(char *apn) {
 	
 	if (!initMQTT())
 		return false;
+	
+	getNetworkName();
+	
+	_monitor->print("Network name: ");
+	_monitor->println(_networkName);
 	
 	return true;
 }
@@ -244,6 +253,9 @@ bool LTEmModem::registerDevice(const char* deviceSecret, const char* partnerId) 
 	if (readResponse() != ResponseOK)
 		return false;
 	
+	
+	deviceId =  _credentials->getDeviceId();
+
 	return true;
 }
 
@@ -274,6 +286,15 @@ char* LTEmModem::getIMEI() {
 	}
 	
 	return _imei;
+}
+
+char* LTEmModem::getNetworkName() {
+	println("AT+COPS?");
+	if (readResponse() != ResponseOK) {
+		_lastError = "Couldn't get network provider";
+	}
+	
+	return _networkName;
 }
 
 bool LTEmModem::initTCP() {
@@ -1273,6 +1294,7 @@ ResponseTypes LTEmModem::readResponse(char* buffer, size_t size,
     uint32_t from = NOW;
 	
 	static char asset[50];
+	
 
     do {
         // 250ms,  how many bytes at which baudrate?
@@ -1365,6 +1387,22 @@ ResponseTypes LTEmModem::readResponse(char* buffer, size_t size,
                 continue;
             }
 			
+			
+			if (startsWith("+COPS: 1,0,", buffer)) {
+				char networkName[255];
+				
+				String response = buffer;
+				int firstIndex = response.indexOf("\"");
+				int lastIndex = response.lastIndexOf("\"");
+				
+				String test = response.substring(firstIndex+1, lastIndex);
+				test.toCharArray(networkName, 255);
+				
+				_networkName = networkName;
+				
+				return ResponseOK;
+			}
+			
 			if (startsWith("{\"message\":[{\"error\":\"", buffer)) {
 				char myBuffer[200];
 				
@@ -1435,7 +1473,8 @@ ResponseTypes LTEmModem::readResponse(char* buffer, size_t size,
 			}
 			
 			if (startsWith("+UUMQTTCM: 6", buffer)) {  //handle MQTT message
-				process();
+				//process();
+				readMqttMessage();
 			}
 			
 			if (startsWith("Topic:", buffer)) {
@@ -1598,7 +1637,8 @@ bool LTEmModem::send(Payload &payload) {
 	
 	bool ok;
 	
-	const char* const deviceId = _credentials->getDeviceId();  	//store deviceId in const
+	_credentials->setDeviceId(deviceId);
+	//const char* const deviceId = _credentials->getDeviceId();  	//store deviceId in const
 	
 	if (index == -1) { //no json string			
 		char* buffer;
