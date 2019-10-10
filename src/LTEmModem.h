@@ -62,6 +62,7 @@ class LTEmModem : public Device<LTEmOptions>
 		
 		char* getLastError();
 		char* getIMEI();
+		char* getNetworkName();
 		
 		using Device<LTEmOptions>::send;
 		
@@ -123,6 +124,7 @@ class LTEmModem : public Device<LTEmOptions>
 		char* _cimi;
 		char* _firmware;
 		char* _lastError = "";
+		char* _networkName;
 		// const char* _mySpace;
 		// const char* _myDeviceId = "";
 		// char* _myDeviceToken = "";
