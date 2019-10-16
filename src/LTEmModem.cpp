@@ -15,7 +15,7 @@ typedef struct NameValuePair {
     bool Value;
 } NameValuePair;
 
-static const char* deviceId;
+//static const char* deviceId;
 
 const uint8_t nConfigCount = 3;
 static NameValuePair nConfig[nConfigCount] = {
@@ -80,41 +80,41 @@ bool LTEmModem::init(char *apn) {
 	
 	purgeAllResponsesRead(); 							//deleting all buffer data
 	
+	_imei = "";
+	_iccid = "";
+	_cimi = "";
+	_firmware = "";
+	_lastError = "";
+	
 	println("AT+CGSN"); 								//getting imei number
 	if (readResponse() != ResponseOK) {
 		_lastError = "Couldn't get IMEI number";
-		return false;
+		//return false;
 	}
-	
 	_monitor->print("IMEI number: ");
 	_monitor->println(_imei);
-	
-	
 	
 	println("AT+CCID"); 								//getting iccid number
 	if (readResponse() != ResponseOK) {
 		_lastError = "Couldn't get iccid number";
-		return false;
+		//return false;
 	}
-	
 	_monitor->print("ICCID number: ");
 	_monitor->println(_iccid);
 	
 	println("AT+CIMI"); 								//getting cimi number
 	if (readResponse() != ResponseOK) {
 		_lastError = "Couldn't get cimi number";
-		return false;
-	}
-	
+		//return false;
+	}	
 	_monitor->print("IMSI number: ");
 	_monitor->println(_cimi);
 	
 	println("AT+CGMR"); 								//getting firmware version
 	if (readResponse() != ResponseOK) {
 		_lastError = "Couldn't get firmware version";
-		return false;
+		//return false;
 	}
-	
 	_monitor->print("Firmware version: ");
 	_monitor->println(_firmware);
 	
@@ -150,7 +150,6 @@ bool LTEmModem::init(char *apn) {
 		return false;
 	
 	getNetworkName();
-	
 	_monitor->print("Network name: ");
 	_monitor->println(_networkName);
 	
@@ -175,6 +174,46 @@ bool LTEmModem::init() {
 		_lastError = "Could not activate modem";
 		return false;
 	}
+	
+	purgeAllResponsesRead(); 							//deleting all buffer data
+	
+	_imei = "";
+	_iccid = "";
+	_cimi = "";
+	_firmware = "";
+	_lastError = "";
+	
+	println("AT+CGSN"); 								//getting imei number
+	if (readResponse() != ResponseOK) {
+		_lastError = "Couldn't get IMEI number";
+		//return false;
+	}
+	_monitor->print("IMEI number: ");
+	_monitor->println(_imei);
+	
+	println("AT+CCID"); 								//getting iccid number
+	if (readResponse() != ResponseOK) {
+		_lastError = "Couldn't get iccid number";
+		//return false;
+	}
+	_monitor->print("ICCID number: ");
+	_monitor->println(_iccid);
+	
+	println("AT+CIMI"); 								//getting cimi number
+	if (readResponse() != ResponseOK) {
+		_lastError = "Couldn't get cimi number";
+		//return false;
+	}	
+	_monitor->print("IMSI number: ");
+	_monitor->println(_cimi);
+	
+	println("AT+CGMR"); 								//getting firmware version
+	if (readResponse() != ResponseOK) {
+		_lastError = "Couldn't get firmware version";
+		//return false;
+	}
+	_monitor->print("Firmware version: ");
+	_monitor->println(_firmware);
 }
 
 bool LTEmModem::registerDevice(const char* deviceSecret, const char* partnerId) {
@@ -185,6 +224,8 @@ bool LTEmModem::registerDevice(const char* deviceSecret, const char* partnerId) 
 	char bufPartner[255];
 	char* secret = strdup(deviceSecret);
 	char* partner = strdup(partnerId);
+	
+	//deviceId= "";
 
 	sprintf(bufSecret, "{\"secret\": \"%s\"}", secret);
 	sprintf(bufPartner, "/partner/%s/register", partner);
@@ -218,8 +259,8 @@ bool LTEmModem::registerDevice(const char* deviceSecret, const char* partnerId) 
 	println(bufSecret);
 	readResponse();
 	
-	println("AT+URDFILE=\"postdata.txt\"");				//read data written to file 
-	readResponse();
+	//println("AT+URDFILE=\"postdata.txt\"");				//read data written to file 
+	//readResponse();
 	
 	println("AT+UHTTP=0 ");								//reset the HTTP profile #0
 	readResponse();
@@ -248,14 +289,36 @@ bool LTEmModem::registerDevice(const char* deviceSecret, const char* partnerId) 
 		return false;
 	
 	readResponse<int, int>(_uuhttpParser, &value1, &value2);	//wait for response from post command
+	
+	if (value1 == 0 && value2 != 1) {
+		_lastError = "Could not get id and token from server";
+		return false;
+	}
 
 	println("AT+URDFILE=\"result.txt\"");				//read data written to file 
 	if (readResponse() != ResponseOK)
 		return false;
 	
 	
-	deviceId =  _credentials->getDeviceId();
+	const char* const myDeviceId = _credentials->getDeviceId();
+	_monitor->println("******************* DEVICE ID *************************");
+	_monitor->println(myDeviceId);
+	
+	getNetworkName();
+	_monitor->print("Network name: ");
+	_monitor->println(_networkName);
+	
+	_monitor->println("******************* DEVICE ID *************************");
+	_monitor->println(myDeviceId);
 
+	
+	//deviceId =  _credentials->getDeviceId();
+
+	// if (strlen(deviceId) <= 2) {
+		// _lastError = "Could not read response from server";
+		// return false;
+	// }
+		
 	return true;
 }
 
@@ -552,16 +615,29 @@ bool LTEmModem::mqttConnected() {
 
 bool LTEmModem::listen(char* actuator) {
 	static char buffer[300];
-	const char* const deviceId = _credentials->getDeviceId();
+	const char* const myDeviceId = _credentials->getDeviceId();
 	
 	//sprintf(buffer, "device/%s/asset/%s/feed", _credentials->getDeviceId(), actuator);
-	sprintf(buffer, "device/%s/asset/%s/command", deviceId, actuator);
+	sprintf(buffer, "device/%s/asset/%s/command", myDeviceId, actuator);
 	
 	return subscribeMqttMessage(buffer);
 }
 
 void LTEmModem::process() {
-	readMqttMessage();
+	//readMqttMessage();
+	
+	// _monitor->println("************** DEVICE ID *************");
+	// _monitor->println(deviceId);
+	// _monitor->println("############## DEVICE ID #############");
+	// _monitor->println(_credentials->getDeviceId());
+	
+	
+	readResponse();
+	
+	// _monitor->println("************** DEVICE ID *************");
+	// _monitor->println(deviceId);
+	// _monitor->println("############## DEVICE ID #############");
+	// _monitor->println(_credentials->getDeviceId());
 }
 
 void LTEmModem::initBuffer() {
@@ -826,15 +902,19 @@ void LTEmModem::reboot() {
 }
 
 bool LTEmModem::isConnected() {
-    uint8_t value = 0;
+    uint8_t value = -1;
 
     println("AT+CGATT?");
 
-    if (readResponse<uint8_t, uint8_t>(_cgattParser, &value, NULL, 0, 10 * 1000) == ResponseOK) {
+    if (readResponse<uint8_t, uint8_t>(_cgattParser, &value, NULL) == ResponseOK) {
+		if (value == 255)
+			return isConnected();
+		
         return (value == 1);
 	}
-    else
+    else {
 		return false;
+	}
 }
 
 // Turns the modem on and returns true if successful.
@@ -1295,6 +1375,7 @@ ResponseTypes LTEmModem::readResponse(char* buffer, size_t size,
 	
 	static char asset[50];
 	
+	
 
     do {
         // 250ms,  how many bytes at which baudrate?
@@ -1388,7 +1469,7 @@ ResponseTypes LTEmModem::readResponse(char* buffer, size_t size,
             }
 			
 			
-			if (startsWith("+COPS: 1,0,", buffer)) {
+			if (startsWith("+COPS: 1,0,", buffer) || startsWith("+COPS: 0,0,", buffer)) {
 				char networkName[255];
 				
 				String response = buffer;
@@ -1422,7 +1503,7 @@ ResponseTypes LTEmModem::readResponse(char* buffer, size_t size,
 				JsonObject& root = jsonBuffer.parseObject(buffer);
 				
 				char space[255];
-				char token[100];
+				char token[255];
 				char id[255];
 				char status[100];
 				
@@ -1478,12 +1559,16 @@ ResponseTypes LTEmModem::readResponse(char* buffer, size_t size,
 			}
 			
 			if (startsWith("Topic:", buffer)) {
+				//static const char* const myDeviceId = deviceId;
+	
 				String response = buffer;
 				int index0 = response.indexOf("/asset/");
 				int index1 = response.lastIndexOf("/");
 				
 				String message = response.substring(index0 + 7, index1);
 				message.toCharArray(asset, 50);
+				
+				//deviceId = myDeviceId;
 			}
 			
 			if (startsWith("Msg:{\"at\":", buffer)) {	//handle callback 
@@ -1636,16 +1721,16 @@ bool LTEmModem::send(Payload &payload) {
 	int index = temp.indexOf("|");
 	
 	bool ok;
-	
-	_credentials->setDeviceId(deviceId);
-	//const char* const deviceId = _credentials->getDeviceId();  	//store deviceId in const
+
+	//_credentials->setDeviceId(deviceId);
+	//static const char* const myDeviceId = _credentials->getDeviceId();  	//store deviceId in const
 	
 	if (index == -1) { //no json string			
 		char* buffer;
 		{
-			int length = strlen(deviceId) + 14;  // 14 fixed chars + deviceId
+			int length = strlen(_credentials->getDeviceId()) + 14;  // 14 fixed chars + deviceId
 			buffer = new char[length];
-			sprintf(buffer, "device/%s/state", deviceId);
+			sprintf(buffer, "device/%s/state", _credentials->getDeviceId());
 			buffer[length-1] = 0;
 		}
 		
@@ -1653,7 +1738,7 @@ bool LTEmModem::send(Payload &payload) {
 		
 		delete(buffer);
 		
-		_credentials->setDeviceId(deviceId);   					//set deviceId back 
+		//_credentials->setDeviceId(myDeviceId);   					//set deviceId back 
 	}
 	else {
 		String assetName = temp.substring(0, index);
