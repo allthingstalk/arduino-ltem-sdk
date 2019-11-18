@@ -59,6 +59,7 @@ class LTEmModem : public Device<LTEmOptions>
 		
 		void disconnect();
 		void process();
+		void sendSMS(char* number, char* message);
 		
 		char* getLastError();
 		char* getIMEI();
@@ -70,6 +71,7 @@ class LTEmModem : public Device<LTEmOptions>
 		typedef ResponseTypes(*CallbackMethodPtr)(ResponseTypes& response, const char* buffer, size_t size, void* parameter, void* parameter2);
 		
 		void (*_callback)(const char*);
+		void getModemData();
 		
 		int timedRead(uint32_t timeout) const;
 		int createSocket(uint16_t localPort);
@@ -128,6 +130,8 @@ class LTEmModem : public Device<LTEmOptions>
 		// const char* _mySpace;
 		// const char* _myDeviceId = "";
 		// char* _myDeviceToken = "";
+		
+		char* _smsMessage;
 		
 		size_t _inputBufferSize;
 		size_t _pendingUDPBytes = 0;
