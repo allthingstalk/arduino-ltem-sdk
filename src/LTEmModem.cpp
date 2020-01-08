@@ -78,45 +78,7 @@ bool LTEmModem::init(char *apn) {
 		return false;
 	}
 	
-	purgeAllResponsesRead(); 							//deleting all buffer data
-	
-	_imei = "";
-	_iccid = "";
-	_cimi = "";
-	_firmware = "";
-	_lastError = "";
-	
-	println("AT+CGSN"); 								//getting imei number
-	if (readResponse() != ResponseOK) {
-		_lastError = "Couldn't get IMEI number";
-		//return false;
-	}
-	_monitor->print("IMEI number: ");
-	_monitor->println(_imei);
-	
-	println("AT+CCID"); 								//getting iccid number
-	if (readResponse() != ResponseOK) {
-		_lastError = "Couldn't get iccid number";
-		//return false;
-	}
-	_monitor->print("ICCID number: ");
-	_monitor->println(_iccid);
-	
-	println("AT+CIMI"); 								//getting cimi number
-	if (readResponse() != ResponseOK) {
-		_lastError = "Couldn't get cimi number";
-		//return false;
-	}	
-	_monitor->print("IMSI number: ");
-	_monitor->println(_cimi);
-	
-	println("AT+CGMR"); 								//getting firmware version
-	if (readResponse() != ResponseOK) {
-		_lastError = "Couldn't get firmware version";
-		//return false;
-	}
-	_monitor->print("Firmware version: ");
-	_monitor->println(_firmware);
+	getModemData();
 	
 	println("AT+CEDRXS=0");								//use of eDRX disabled
 	if (readResponse() != ResponseOK) {
@@ -175,6 +137,10 @@ bool LTEmModem::init() {
 		return false;
 	}
 	
+	getModemData();
+}
+
+void LTEmModem::getModemData() {
 	purgeAllResponsesRead(); 							//deleting all buffer data
 	
 	_imei = "";
@@ -299,19 +265,10 @@ bool LTEmModem::registerDevice(const char* deviceSecret, const char* partnerId) 
 	if (readResponse() != ResponseOK)
 		return false;
 	
-	
-	const char* const myDeviceId = _credentials->getDeviceId();
-	_monitor->println("******************* DEVICE ID *************************");
-	_monitor->println(myDeviceId);
-	
 	getNetworkName();
 	_monitor->print("Network name: ");
 	_monitor->println(_networkName);
-	
-	_monitor->println("******************* DEVICE ID *************************");
-	_monitor->println(myDeviceId);
 
-	
 	//deviceId =  _credentials->getDeviceId();
 
 	// if (strlen(deviceId) <= 2) {
@@ -638,6 +595,19 @@ void LTEmModem::process() {
 	// _monitor->println(deviceId);
 	// _monitor->println("############## DEVICE ID #############");
 	// _monitor->println(_credentials->getDeviceId());
+}
+
+void LTEmModem::sendSMS(char* number, char* message) {
+	println("AT+CMGF=1");
+	
+	_smsMessage = message;
+	if (readResponse() == ResponseOK) {
+		static char buffer[50];
+		sprintf(buffer, "AT+CMGS=\"%s\"\r", number);
+		
+		println(buffer);
+		readResponse();
+	}
 }
 
 void LTEmModem::initBuffer() {
@@ -1374,8 +1344,6 @@ ResponseTypes LTEmModem::readResponse(char* buffer, size_t size,
     uint32_t from = NOW;
 	
 	static char asset[50];
-	
-	
 
     do {
         // 250ms,  how many bytes at which baudrate?
@@ -1413,7 +1381,7 @@ ResponseTypes LTEmModem::readResponse(char* buffer, size_t size,
 				_iccid = &myBuffer[7];
 			}
 			
-			if (startsWith("AT+CIMI", buffer)) {
+			if (startsWith("AT+CIMI", buffer)) {  //getting imsi number
 				char myBuffer[200];
 				readLn(myBuffer, 200, 250);
 				
@@ -1425,6 +1393,11 @@ ResponseTypes LTEmModem::readResponse(char* buffer, size_t size,
 				readLn(myBuffer, 200, 250);
 				
 				_firmware = &myBuffer[0];
+			}
+			
+			if (startsWith(">", buffer)) {
+				print(_smsMessage);
+				print("\u001a");			// CTRL + Z: to end sms message, will trigger to modem to send the message.
 			}
 			
             int param1, param2;
@@ -1484,7 +1457,7 @@ ResponseTypes LTEmModem::readResponse(char* buffer, size_t size,
 				return ResponseOK;
 			}
 			
-			if (startsWith("{\"message\":[{\"error\":\"", buffer)) {
+			if (startsWith("{\"message\":[{\"error\":\"", buffer)) {  // When receiving an error response from the backend
 				char myBuffer[200];
 				
 				String response = buffer;
@@ -1498,7 +1471,7 @@ ResponseTypes LTEmModem::readResponse(char* buffer, size_t size,
 				return ResponseError;
 			}
 			
-			if (startsWith("{\"id\":", buffer)) {
+			if (startsWith("{\"id\":", buffer)) {					// response when we registered a device
 				DynamicJsonBuffer jsonBuffer;
 				JsonObject& root = jsonBuffer.parseObject(buffer);
 				
@@ -1571,7 +1544,7 @@ ResponseTypes LTEmModem::readResponse(char* buffer, size_t size,
 				//deviceId = myDeviceId;
 			}
 			
-			if (startsWith("Msg:{\"at\":", buffer)) {	//handle callback 
+			if (startsWith("Msg:{\"at\":", buffer)) {	//handle callback from an actuation
 				char myBuffer[500];
 				
 				String response = buffer;
