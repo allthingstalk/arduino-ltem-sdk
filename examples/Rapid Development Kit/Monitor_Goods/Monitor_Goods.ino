@@ -51,7 +51,7 @@
 void callback(const char* data);
 
 APICredentials credentials(SPACE_ENDPOINT, DEVICE_TOKEN, DEVICE_ID);
-LTEmModem modem(ltemSerial, debugSerial, credentials, true, callback); // false: disables full debug mode
+LTEmModem modem(ltemSerial, debugSerial, credentials, false, callback); // Change "false" to true to enable full debug mode
 
 CborPayload payload;
 Adafruit_BME280 tph1;
