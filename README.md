@@ -24,16 +24,13 @@ Board
 - Sodaq AFF (https://support.sodaq.com/Boards/Sara_AFF/)
 - Sodaq SFF (https://support.sodaq.com/Boards/Sara_SFF/)
 
-## How to install
+## Installation
+This SDK is available on Arduino Library Manager. To install it:
 
-Download this library as .zip.
-In Arduino IDE goto Sketch ==> Include Library ==> Add .ZIP Library.
+- In Arduino IDE, go to *Tools* > *Manage Libraries*
+- Search for and download "**AllThingsTalk LTE-M SDK**" by AllThingsTalk
+- Done! The SDK (as well as RDK) examples are downloaded and available as well in *Arduino IDE* > *File* > *Examples* > *AllThingsTalk LTE-M SDK*
 
-This will import the new sdk and examples.
-
-> Note: to avoid conflicts, please remove or backup the old SDK
-
-The Arduino LTE-M SDK uses the ArduinoJSON library. Make sure you have the ArduinoJSON library installed. You can download it here (https://github.com/allthingstalk/arduino-ltem-sdk)
 
 ## How to use
 
