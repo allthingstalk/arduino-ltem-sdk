@@ -1,4 +1,4 @@
-# arduino-LTE-m-sdk
+# AllThingsTalk Arduino LTE-M SDK
 
 ## About
 
