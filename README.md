@@ -4,25 +4,16 @@
 
 The LTE-M SDK for Arduino provides an easy to use set of functions that support LTE-M LPWAN networks for the AllThingsTalk IoT Cloud.
 
-### Version v1.0
+## Supported Hardware
 
-* Support for the U-Blox Model SARA-R410M
-* MQTT client support (using the embedded SARA-R410M MQTT client)
-* Support Binary encoding (compliant with the AllThingsTalk ABCL decoding language)
-* Support CBOR encoding
-* Support JSON encoding
-* Support for downlink messages
+This SDK has been tested and works on the hardware listed below.
 
-## Hardware
+### Modules
+- [SARA-R410M](https://www.u-blox.com/en/product/sara-r4-series)
 
-This SDK has been tested to work with the following hardware
-
-Chip
-- SARA-R410M (https://www.u-blox.com/en/product/sara-r4-series)
-
-Board
-- Sodaq AFF (https://support.sodaq.com/Boards/Sara_AFF/)
-- Sodaq SFF (https://support.sodaq.com/Boards/Sara_SFF/)
+### Development Boards
+- [Sodaq AFF](https://support.sodaq.com/Boards/Sara_AFF/)
+- [Sodaq SFF](https://support.sodaq.com/Boards/Sara_SFF/)
 
 ## Installation
 This SDK is available on Arduino Library Manager. To install it:
