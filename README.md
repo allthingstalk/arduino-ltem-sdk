@@ -2,7 +2,8 @@
 
 <img align="right" width="250" height="92" src="extras/lte-m-logo.png">
 
-The LTE-M SDK for Arduino provides an easy to use set of functions that support LTE-M LPWAN networks for the AllThingsTalk IoT Cloud.
+The LTE-M SDK for Arduino provides an easy to use set of functions that support LTE-M LPWAN networks for the AllThingsTalk IoT Cloud.  
+LTE-M RDK (Rapid Development Kit) files are also contained in this SDK [here](https://github.com/allthingstalk/arduino-ltem-sdk/tree/master/examples/Rapid%20Development%20Kit).
 
 ## Supported Hardware
 
