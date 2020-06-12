@@ -45,8 +45,12 @@ void AllThingsTalk_LTEM::debugPort(Stream &debugSerial, bool verbose) {
     this->debugSerial = &debugSerial;
     debug("");
     debug("------------- AllThingsTalk LTE-M Serial Begin -------------");
-    if (!verbose) debug("Debug Level: Normal");
-    debugVerbose("Debug Level: Verbose");
+    if (verbose) {
+        debugVerbose("Debug Level: Verbose. You'll also see AT Commands coming in and out from the Modem.");
+        r4x.setDiag(debugSerial);
+    } else {
+        debug("Debug Level: Normal")
+    }
 }
 
 bool AllThingsTalk_LTEM::init() {
