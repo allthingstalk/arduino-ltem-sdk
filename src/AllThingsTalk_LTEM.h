@@ -6,6 +6,7 @@
 #include <Sodaq_MQTT.h>
 #include <Sodaq_R4X_MQTT.h>
 #include <Utils.h>
+#include <CborPayload.h>
 //#include <String.h>
 //#include <stdio.h>
 #include <ArduinoJson.h>
@@ -17,7 +18,7 @@ typedef unsigned char BYTE;
 
 class AllThingsTalk_LTEM {
 public:
-    AllThingsTalk_LTEM(HardwareSerial &modemSerial, APICredentials &credentials, char* APN = "starter.att.iot");
+    AllThingsTalk_LTEM(HardwareSerial &modemSerial, APICredentials &credentials, char* APN);
     void debugPort(Stream &debugSerial, bool verbose = false);
     bool init();
     bool connect();

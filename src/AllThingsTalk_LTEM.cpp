@@ -63,7 +63,6 @@ bool AllThingsTalk_LTEM::init() {
     //r4x_mqtt.setR4Xinstance(&r4x, &AllThingsTalk_LTEM::connectNetwork); // Inform our mqtt instance that we use r4x as the transport
     //r4x_mqtt.setR4Xinstance(&r4x, std::bind(&AllThingsTalk_LTEM::connectNetwork, this));
     r4x_mqtt.setR4Xinstance(&r4x, []{ return true; } );
-
     mqtt.setTransport(&r4x_mqtt);
     return connect();
 }
@@ -93,7 +92,7 @@ bool AllThingsTalk_LTEM::connectNetwork() {
 bool AllThingsTalk_LTEM::connectMqtt() {
     debug("Connecting to MQTT...");
     if (!r4x_mqtt.isAliveMQTT()) {
-        
+        //mqtt.openMQTT();
     } else {
         debug("Already connected to MQTT!");
     }
@@ -118,7 +117,7 @@ bool AllThingsTalk_LTEM::send(Payload &payload) {
             topic = new char[length];
             sprintf(topic, "device/%s/state", _credentials->getDeviceId());
             topic[length-1] = 0;
-            return r4x.mqttPublish(topic, payload.getBytes(), payload.getSize(), 0, 0, false);
+            return mqtt.publish(topic, payload.getBytes(), payload.getSize(), 0, 0);
             delete(topic);
         } else {
             String assetName = rawPayload.substring(0, index);
@@ -134,7 +133,7 @@ bool AllThingsTalk_LTEM::send(Payload &payload) {
             debugVerbose(assetName, ',');
             debugVerbose(" Value:", ' ');
             debugVerbose(jsonPayload);
-            return r4x.mqttPublish(topic, string2ByteArray(JSONmessageBuffer), payload.getSize(), 0, 0, false);
+            return mqtt.publish(topic, string2ByteArray(JSONmessageBuffer), payload.getSize(), 0, 0);
             //return publishMqttMessage(assetName.c_str(), (char*)json.c_str(), true);
         }
     } else {
