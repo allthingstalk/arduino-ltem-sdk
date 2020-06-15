@@ -33,13 +33,9 @@ char* JsonPayload::getString() {
 }
 
 unsigned char* JsonPayload::getBytes() {
-	return string2ByteArray(JSONmessageBuffer);
-}
-
-unsigned char* JsonPayload::string2ByteArray(char* input) {
-    return (unsigned char*)input;
+	return (unsigned char*)JSONmessageBuffer;
 }
 
 unsigned int JsonPayload::getSize() {
-	return sizeof(JSONmessageBuffer);
+	return strlen(JSONmessageBuffer);
 }

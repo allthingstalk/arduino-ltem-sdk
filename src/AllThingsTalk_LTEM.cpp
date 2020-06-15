@@ -71,7 +71,13 @@ bool AllThingsTalk_LTEM::init() {
 
 bool AllThingsTalk_LTEM::connect() {
     if (connectNetwork()) {
-        connectMqtt();
+        if (connectMqtt()) {
+            return true;
+        } else {
+            return false;
+        }
+    } else {
+        return false;
     }
 }
 
@@ -99,12 +105,15 @@ bool AllThingsTalk_LTEM::connectMqtt() {
             connectRetry++;
         }
         if (r4x_mqtt.isAliveMQTT()) {
-            debug('Successfully connected to MQTT!');
+            debug("Successfully connected to MQTT!");
+            return true;
         } else {
             debug("Failed to connect to MQTT!");
+            return false;
         }
     } else {
         debug("Already connected to MQTT!");
+        return true;
     }
 }
 

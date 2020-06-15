@@ -15,7 +15,6 @@ public:
 private:
 	char* savedAssetName;
 	char JSONmessageBuffer[256];
-	unsigned char* string2ByteArray(char* input);
 };
 
 #endif
