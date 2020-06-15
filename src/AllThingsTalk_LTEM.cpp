@@ -226,7 +226,7 @@ char* AllThingsTalk_LTEM::getOperator() {
 }
 
 bool AllThingsTalk_LTEM::setOperator(const char* apn) {
-    debug("Setting operator (APN)...")
+    debug("Setting operator (APN)...");
     if (r4x.setApn(apn)) {
         debug("APN Successfully set to: ", ' ');
         debug(apn);
