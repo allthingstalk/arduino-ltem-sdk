@@ -23,8 +23,8 @@
 
 #include <Arduino.h>
 #include <stdint.h>
-#include <Sodaq_MQTT.h>
-#include <Sodaq_R4X.h>
+#include "Sodaq_MQTT.h"
+#include "Sodaq_R4X.h"
 #include "Sodaq_MQTT_Interface.h"
 
 class Sodaq_R4X_MQTT : public Sodaq_MQTT_Interface {

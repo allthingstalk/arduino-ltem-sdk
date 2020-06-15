@@ -26,7 +26,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <Sodaq_MQTT_Interface.h>
+#include "Sodaq_MQTT_Interface.h"
 
 /*!
  * \brief The maximum length of a packet

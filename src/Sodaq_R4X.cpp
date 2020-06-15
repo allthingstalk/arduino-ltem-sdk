@@ -30,7 +30,7 @@ POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "Sodaq_R4X.h"
-#include <Sodaq_wdt.h>
+#include "Sodaq_wdt.h"
 #include "time.h"
 
 //#define DEBUG
