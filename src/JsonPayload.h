@@ -5,9 +5,9 @@
 
 class JsonPayload : public Payload {
 public:
-	void set(char* assetName, char* json);
+	template<typename T> void set(char* assetName, T value);
 	char* getAssetName();
-	virtual char* getPayloadType();
+
 	virtual char* getString();
 	virtual unsigned char* getBytes();
     virtual unsigned int getSize();

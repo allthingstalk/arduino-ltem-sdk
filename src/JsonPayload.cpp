@@ -2,27 +2,22 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 
-char* CborPayload::getPayloadType() {
-    return 'json';
-}
-
-template bool JsonPayload::set(char *assetName, bool value);
-template bool JsonPayload::set(char *assetName, char *value);
-template bool JsonPayload::set(char *assetName, const char *value);
-template bool JsonPayload::set(char *assetName, String value);
-template bool JsonPayload::set(char *assetName, int value);
-template bool JsonPayload::set(char *assetName, byte value);
-template bool JsonPayload::set(char *assetName, short value);
-template bool JsonPayload::set(char *assetName, long value);
-template bool JsonPayload::set(char *assetName, float value);
-template bool JsonPayload::set(char *assetName, double value);
+template void JsonPayload::set(char *assetName, bool value);
+template void JsonPayload::set(char *assetName, char *value);
+template void JsonPayload::set(char *assetName, const char *value);
+template void JsonPayload::set(char *assetName, String value);
+template void JsonPayload::set(char *assetName, int value);
+template void JsonPayload::set(char *assetName, byte value);
+template void JsonPayload::set(char *assetName, short value);
+template void JsonPayload::set(char *assetName, long value);
+template void JsonPayload::set(char *assetName, float value);
+template void JsonPayload::set(char *assetName, double value);
 
 template<typename T> void JsonPayload::set(char* assetName, T value) {
 	savedAssetName = assetName;
 	DynamicJsonDocument doc(256);
 	doc["value"] = value;
     serializeJson(doc, JSONmessageBuffer);
-	return true;
 }
 
 char* JsonPayload::getAssetName() {
@@ -44,7 +39,7 @@ unsigned char* JsonPayload::getBytes() {
 unsigned char* JsonPayload::string2ByteArray(char* input) {
     int loop;
     int i;
-    BYTE* output;
+    unsigned char* output;
     loop = 0;
     i = 0;
     while(input[loop] != '\0') {

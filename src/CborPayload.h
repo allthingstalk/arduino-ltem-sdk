@@ -18,7 +18,6 @@ public:
     bool setTimestamp(uint64_t timestamp);
     bool setLocation(GeoLocation location);
 
-    virtual char* getPayloadType();
 	virtual char* getString();
     virtual unsigned char* getBytes();
     virtual unsigned int getSize();

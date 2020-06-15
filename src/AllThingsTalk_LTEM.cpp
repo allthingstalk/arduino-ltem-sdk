@@ -47,7 +47,7 @@ void AllThingsTalk_LTEM::debugPort(Stream &debugSerial, bool verbose) {
         debugVerbose("Debug Level: Verbose. You'll also see AT Commands coming in and out from the Modem.");
         r4x.setDiag(debugSerial);
     } else {
-        debug("Debug Level: Normal")
+        debug("Debug Level: Normal");
     }
 }
 
@@ -108,44 +108,51 @@ bool AllThingsTalk_LTEM::isConnected() {
     return r4x.isConnected();
 }
 
-bool AllThingsTalk_LTEM::send(Payload &payload) {
-    if (isConnected()) {
-        if (payload.getPayloadType() == 'cbor') {
-            char* topic;
-            int length = strlen(_credentials->getDeviceId()) + 14;  // 14 fixed chars + deviceId
-            topic = new char[length];
-            sprintf(topic, "device/%s/state", _credentials->getDeviceId());
-            topic[length-1] = 0;
-            return mqtt.publish(topic, payload.getBytes(), payload.getSize(), 0, 0);
-        } else if (payload.getPayloadType() == 'json') {
-            char topic[128];
-            snprintf(topic, sizeof topic, "%s%s%s%s%s", "device/", _credentials->getDeviceId(), "/asset/", payload.getAssetName(), "/state");
-            debug("> Message Published to AllThingsTalk (JSON)");
-            debugVerbose("Asset:", ' ');
-            debugVerbose(payload.getAssetName(), ',');
-            debugVerbose(" Value:", ' ');
-            debugVerbose(payload.getString());
-            return mqtt.publish(topic, payload.getBytes(), payload.getSize(), 0, 0);
-            //return publishMqttMessage(assetName.c_str(), (char*)json.c_str(), true);
-        }
-    } else {
-        debug("Can't send message because you're not connected!");
-        return false;
-    }
+bool AllThingsTalk_LTEM::send(CborPayload &payload) {
+	char* topic;
+	int length = strlen(_credentials->getDeviceId()) + 14;  // 14 fixed chars + deviceId
+	topic = new char[length];
+	sprintf(topic, "device/%s/state", _credentials->getDeviceId());
+	topic[length-1] = 0;
+	return mqtt.publish(topic, payload.getBytes(), payload.getSize(), 0, 0);
 }
 
-BYTE* AllThingsTalk_LTEM::string2ByteArray(char* input) {
-    int loop;
-    int i;
-    BYTE* output;
-    loop = 0;
-    i = 0;
-    while(input[loop] != '\0') {
-        output[i++] = input[loop++];
-    }
-    return output;
+bool AllThingsTalk_LTEM::send(JsonPayload &payload) {
+	char topic[128];
+	snprintf(topic, sizeof topic, "%s%s%s%s%s", "device/", _credentials->getDeviceId(), "/asset/", payload.getAssetName(), "/state");
+	debug("> Message Published to AllThingsTalk (JSON)");
+	debugVerbose("Asset:", ' ');
+	debugVerbose(payload.getAssetName(), ',');
+	debugVerbose(" Value:", ' ');
+	debugVerbose(payload.getString());
+	return mqtt.publish(topic, payload.getBytes(), payload.getSize(), 0, 0);
 }
 
+// bool AllThingsTalk_LTEM::send(Payload &payload) {
+    // if (isConnected()) {
+        // if (payload.getPayloadType() == "cbor") {
+            // char* topic;
+            // int length = strlen(_credentials->getDeviceId()) + 14;  // 14 fixed chars + deviceId
+            // topic = new char[length];
+            // sprintf(topic, "device/%s/state", _credentials->getDeviceId());
+            // topic[length-1] = 0;
+            // return mqtt.publish(topic, payload.getBytes(), payload.getSize(), 0, 0);
+        // } else if (payload.getPayloadType() == "json") {
+            // char topic[128];
+            // snprintf(topic, sizeof topic, "%s%s%s%s%s", "device/", _credentials->getDeviceId(), "/asset/", payload.getAssetName(), "/state");
+            // debug("> Message Published to AllThingsTalk (JSON)");
+            // debugVerbose("Asset:", ' ');
+            // debugVerbose(payload.getAssetName(), ',');
+            // debugVerbose(" Value:", ' ');
+            // debugVerbose(payload.getString());
+            // return mqtt.publish(topic, payload.getBytes(), payload.getSize(), 0, 0);
+            // //return publishMqttMessage(assetName.c_str(), (char*)json.c_str(), true);
+        // }
+    // } else {
+        // debug("Can't send message because you're not connected!");
+        // return false;
+    // }
+// }
 
 bool AllThingsTalk_LTEM::setCallback() {
     // TODO

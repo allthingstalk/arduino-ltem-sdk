@@ -14,8 +14,6 @@
 #include "JsonPayload.h"
 // TODO: ABP + DEVICE + OTHERS
 
-typedef unsigned char BYTE;
-
 class AllThingsTalk_LTEM {
 public:
     AllThingsTalk_LTEM(HardwareSerial &modemSerial, APICredentials &credentials, char* APN);
@@ -24,7 +22,9 @@ public:
     bool connect();
     bool disconnect();
     bool isConnected();
-    bool send(Payload &payload);
+    //bool send(Payload &payload);
+	bool send(CborPayload &payload);
+	bool send(JsonPayload &payload);
     bool setCallback();
     bool registerDevice(const char* deviceSecret, const char* partnerId);
     bool sendSMS(char* number, char* message);
@@ -45,7 +45,6 @@ private:
     Stream *debugSerial;
     bool debugVerboseEnabled;
     char* _APN;
-    BYTE* string2ByteArray(char* input);
 };
 
 #endif
