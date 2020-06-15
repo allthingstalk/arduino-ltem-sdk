@@ -6,15 +6,16 @@
 class JsonPayload : public Payload {
 public:
 	void set(char* assetName, char* json);
-	
+	char* getAssetName();
+	virtual char* getPayloadType();
 	virtual char* getString();
 	virtual unsigned char* getBytes();
     virtual unsigned int getSize();
     virtual void reset();
-	
 private:
-	char* jsonString;
-
+	char* savedAssetName;
+	char JSONmessageBuffer[256];
+	unsigned char* string2ByteArray(char* input);
 };
 
 #endif

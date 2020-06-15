@@ -3,6 +3,10 @@
 #include "CborPayload.h"
 #include "GeoLocation.h"
 
+char* CborPayload::getPayloadType() {
+    return 'cbor';
+}
+
 CborPayload::CborPayload(unsigned int capacity) {
     this->capacity = capacity;
     this->buffer = new unsigned char[capacity];

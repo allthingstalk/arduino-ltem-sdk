@@ -1,6 +1,4 @@
 #include "AllThingsTalk_LTEM.h"
-#include <ArduinoJson.h>
-
 
 #define URAT            SODAQ_R4X_LTEM_URAT
 #define MNOPROF         MNOProfiles::SIM_ICCID
@@ -112,32 +110,22 @@ bool AllThingsTalk_LTEM::isConnected() {
 
 bool AllThingsTalk_LTEM::send(Payload &payload) {
     if (isConnected()) {
-        String rawPayload(payload.getString());
-        int index = rawPayload.indexOf("|"); // Check if it's a JSON
-        bool ok;
-        if (index == -1) { // This is a CBOR Message
+        if (payload.getPayloadType() == 'cbor') {
             char* topic;
             int length = strlen(_credentials->getDeviceId()) + 14;  // 14 fixed chars + deviceId
             topic = new char[length];
             sprintf(topic, "device/%s/state", _credentials->getDeviceId());
             topic[length-1] = 0;
             return mqtt.publish(topic, payload.getBytes(), payload.getSize(), 0, 0);
-            delete(topic);
-        } else {
-            String assetName = rawPayload.substring(0, index);
-            String jsonPayload = rawPayload.substring(index+1);
+        } else if (payload.getPayloadType() == 'json') {
             char topic[128];
-            snprintf(topic, sizeof topic, "%s%s%s%s%s", "device/", _credentials->getDeviceId(), "/asset/", assetName.c_str(), "/state");
-            DynamicJsonDocument doc(256);
-            char JSONmessageBuffer[256];
-            doc["value"] = jsonPayload;
-            serializeJson(doc, JSONmessageBuffer);
+            snprintf(topic, sizeof topic, "%s%s%s%s%s", "device/", _credentials->getDeviceId(), "/asset/", payload.getAssetName(), "/state");
             debug("> Message Published to AllThingsTalk (JSON)");
             debugVerbose("Asset:", ' ');
-            debugVerbose(assetName, ',');
+            debugVerbose(payload.getAssetName(), ',');
             debugVerbose(" Value:", ' ');
-            debugVerbose(jsonPayload);
-            return mqtt.publish(topic, string2ByteArray(JSONmessageBuffer), payload.getSize(), 0, 0);
+            debugVerbose(payload.getString());
+            return mqtt.publish(topic, payload.getBytes(), payload.getSize(), 0, 0);
             //return publishMqttMessage(assetName.c_str(), (char*)json.c_str(), true);
         }
     } else {
