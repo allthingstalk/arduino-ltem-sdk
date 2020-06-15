@@ -173,6 +173,7 @@ bool AllThingsTalk_LTEM::send(JsonPayload &payload) {
         } else {
             debug("> Failed to Publish Message to AllThingsTalk (JSON)");
             return false;
+        }
     }
 }
 
