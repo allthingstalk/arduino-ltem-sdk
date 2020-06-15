@@ -1,6 +1,5 @@
+#include "ArduinoJson.h"
 #include "JsonPayload.h"
-#include <Arduino.h>
-#include <ArduinoJson.h>
 
 template void JsonPayload::set(char *assetName, bool value);
 template void JsonPayload::set(char *assetName, char *value);
