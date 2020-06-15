@@ -42,7 +42,7 @@ void AllThingsTalk_LTEM::debugPort(Stream &debugSerial, bool verbose) {
     debugVerboseEnabled = verbose;
     this->debugSerial = &debugSerial;
     debug("");
-    debug("------------- AllThingsTalk LTE-M Serial Begin -------------");
+    debug("------------- AllThingsTalk LTE-M SDK Debug Output Begin -------------");
     if (verbose) {
         debugVerbose("Debug Level: Verbose. You'll also see AT Commands coming in and out from the Modem.");
         r4x.setDiag(debugSerial);
@@ -51,17 +51,34 @@ void AllThingsTalk_LTEM::debugPort(Stream &debugSerial, bool verbose) {
     }
 }
 
+String AllThingsTalk_LTEM::generateUniqueID() {
+    // This is unique to Arduino Zero/M0-like boards.
+    // Most other Arduino boards don't possess a unique serial number.
+    volatile uint32_t val1, val2, val3, val4;
+    volatile uint32_t *ptr1 = (volatile uint32_t *)0x0080A00C;
+    val1 = *ptr1;
+    volatile uint32_t *ptr = (volatile uint32_t *)0x0080A040;
+    val2 = *ptr;
+    ptr++;
+    val3 = *ptr;
+    ptr++;
+    val4 = *ptr;
+    char id[23];
+    sprintf(id, "%8x%8x", val2, val4);
+    debugVerbose("Generated Unique ID for this device:", ' ');
+    debugVerbose(id);
+    return id;
+}
+
+//TODO: PINS
+//TODO: LED
 bool AllThingsTalk_LTEM::init() {
-    //TODO: PINS
-    //TODO: LED
     mqtt.setServer(_credentials->getSpace(), 1883);
     mqtt.setAuth(_credentials->getDeviceToken(), "arbitrary");
-    // TODO: ADD UNIQUE CLIENT ID GENERATION (MUST!)
-    mqtt.setClientId("UFOHWEUFUEHWOHUFEWfwefwefwe");
-    mqtt.setKeepAlive(300); // Seconds I suppose
+    mqtt.setClientId(generateUniqueID().c_str());
+    mqtt.setKeepAlive(300);
     _modemSerial->begin(r4x.getDefaultBaudrate()); // The transport layer is a Sodaq_R4X
     r4x.init(&saraR4xxOnOff, *_modemSerial);
-    //r4x.setDiag(DEBUG_STREAM);
     //r4x_mqtt.setR4Xinstance(&r4x, &AllThingsTalk_LTEM::connectNetwork); // Inform our mqtt instance that we use r4x as the transport
     //r4x_mqtt.setR4Xinstance(&r4x, std::bind(&AllThingsTalk_LTEM::connectNetwork, this));
     r4x_mqtt.setR4Xinstance(&r4x, []{ return true; } );

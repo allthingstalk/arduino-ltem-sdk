@@ -39,6 +39,7 @@ private:
     template<typename T> void debugVerbose(T message, char separator = '\n');
     bool connectNetwork();
     bool connectMqtt();
+    String generateUniqueID();
     HardwareSerial *_modemSerial;
     APICredentials *_credentials;
     Stream *debugSerial;
