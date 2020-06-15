@@ -149,7 +149,13 @@ bool AllThingsTalk_LTEM::send(CborPayload &payload) {
         topic = new char[length];
         sprintf(topic, "device/%s/state", _credentials->getDeviceId());
         topic[length-1] = 0;
-        return mqtt.publish(topic, payload.getBytes(), payload.getSize(), 0, 0);
+        if (mqtt.publish(topic, payload.getBytes(), payload.getSize(), 0, 0)) {
+            debug("> Message Published to AllThingsTalk (CBOR)");
+            return true;
+        } else {
+            debug("> Failed to Publish Message to AllThingsTalk (CBOR)");
+            return false;
+        }
     }
 }
 
@@ -157,12 +163,16 @@ bool AllThingsTalk_LTEM::send(JsonPayload &payload) {
     if (isConnected()) {
         char topic[128];
         snprintf(topic, sizeof topic, "%s%s%s%s%s", "device/", _credentials->getDeviceId(), "/asset/", payload.getAssetName(), "/state");
-        debug("> Message Published to AllThingsTalk (JSON)");
-        debugVerbose("Asset:", ' ');
-        debugVerbose(payload.getAssetName(), ',');
-        debugVerbose(" Value:", ' ');
-        debugVerbose(payload.getString());
-        return mqtt.publish(topic, payload.getBytes(), payload.getSize(), 0, 0);
+        if (mqtt.publish(topic, payload.getBytes(), payload.getSize(), 0, 0)) {
+            debug("> Message Published to AllThingsTalk (JSON)");
+            debugVerbose("Asset:", ' ');
+            debugVerbose(payload.getAssetName(), ',');
+            debugVerbose(" Value:", ' ');
+            debugVerbose(payload.getString());
+            return true;
+        } else {
+            debug("> Failed to Publish Message to AllThingsTalk (JSON)");
+            return false;
     }
 }
 
