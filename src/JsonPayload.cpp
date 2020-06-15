@@ -14,6 +14,7 @@ template void JsonPayload::set(char *assetName, float value);
 template void JsonPayload::set(char *assetName, double value);
 
 template<typename T> void JsonPayload::set(char* assetName, T value) {
+    reset();
 	savedAssetName = assetName;
 	DynamicJsonDocument doc(256);
 	doc["value"] = value;
@@ -37,15 +38,7 @@ unsigned char* JsonPayload::getBytes() {
 }
 
 unsigned char* JsonPayload::string2ByteArray(char* input) {
-    int loop;
-    int i;
-    unsigned char* output;
-    loop = 0;
-    i = 0;
-    while(input[loop] != '\0') {
-        output[i++] = input[loop++];
-    }
-    return output;
+    return (unsigned char*)input;
 }
 
 unsigned int JsonPayload::getSize() {

@@ -94,7 +94,15 @@ bool AllThingsTalk_LTEM::connectNetwork() {
 bool AllThingsTalk_LTEM::connectMqtt() {
     debug("Connecting to MQTT...");
     if (!r4x_mqtt.isAliveMQTT()) {
-        //mqtt.openMQTT();
+        int connectRetry = 0;
+        while (!mqtt.open() && connectRetry < 5) {
+            connectRetry++;
+        }
+        if (r4x_mqtt.isAliveMQTT()) {
+            debug('Successfully connected to MQTT!');
+        } else {
+            debug("Failed to connect to MQTT!");
+        }
     } else {
         debug("Already connected to MQTT!");
     }
@@ -109,23 +117,27 @@ bool AllThingsTalk_LTEM::isConnected() {
 }
 
 bool AllThingsTalk_LTEM::send(CborPayload &payload) {
-	char* topic;
-	int length = strlen(_credentials->getDeviceId()) + 14;  // 14 fixed chars + deviceId
-	topic = new char[length];
-	sprintf(topic, "device/%s/state", _credentials->getDeviceId());
-	topic[length-1] = 0;
-	return mqtt.publish(topic, payload.getBytes(), payload.getSize(), 0, 0);
+    if (isConnected()) {
+        char* topic;
+        int length = strlen(_credentials->getDeviceId()) + 14;  // 14 fixed chars + deviceId
+        topic = new char[length];
+        sprintf(topic, "device/%s/state", _credentials->getDeviceId());
+        topic[length-1] = 0;
+        return mqtt.publish(topic, payload.getBytes(), payload.getSize(), 0, 0);
+    }
 }
 
 bool AllThingsTalk_LTEM::send(JsonPayload &payload) {
-	char topic[128];
-	snprintf(topic, sizeof topic, "%s%s%s%s%s", "device/", _credentials->getDeviceId(), "/asset/", payload.getAssetName(), "/state");
-	debug("> Message Published to AllThingsTalk (JSON)");
-	debugVerbose("Asset:", ' ');
-	debugVerbose(payload.getAssetName(), ',');
-	debugVerbose(" Value:", ' ');
-	debugVerbose(payload.getString());
-	return mqtt.publish(topic, payload.getBytes(), payload.getSize(), 0, 0);
+    if (isConnected()) {
+        char topic[128];
+        snprintf(topic, sizeof topic, "%s%s%s%s%s", "device/", _credentials->getDeviceId(), "/asset/", payload.getAssetName(), "/state");
+        debug("> Message Published to AllThingsTalk (JSON)");
+        debugVerbose("Asset:", ' ');
+        debugVerbose(payload.getAssetName(), ',');
+        debugVerbose(" Value:", ' ');
+        debugVerbose(payload.getString());
+        return mqtt.publish(topic, payload.getBytes(), payload.getSize(), 0, 0);
+    }
 }
 
 // bool AllThingsTalk_LTEM::send(Payload &payload) {

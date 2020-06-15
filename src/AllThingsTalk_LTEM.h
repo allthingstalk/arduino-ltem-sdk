@@ -2,16 +2,15 @@
 #define AllThingsTalk_LTEM_h
 
 #include "Arduino.h"
-#include <Sodaq_R4X.h>
-#include <Sodaq_MQTT.h>
-#include <Sodaq_R4X_MQTT.h>
 #include <Utils.h>
-#include <CborPayload.h>
-//#include <String.h>
-//#include <stdio.h>
-#include <ArduinoJson.h>
-#include "APICredentials.h"
+#include "Sodaq_R4X.h"
+#include "Sodaq_MQTT.h"
+#include "Sodaq_R4X_MQTT.h"
+#include "ArduinoJson.h"
+#include "CborPayload.h"
 #include "JsonPayload.h"
+#include "APICredentials.h"
+
 // TODO: ABP + DEVICE + OTHERS
 
 class AllThingsTalk_LTEM {
