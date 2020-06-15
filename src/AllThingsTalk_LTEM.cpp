@@ -177,32 +177,6 @@ bool AllThingsTalk_LTEM::send(JsonPayload &payload) {
     }
 }
 
-// bool AllThingsTalk_LTEM::send(Payload &payload) {
-    // if (isConnected()) {
-        // if (payload.getPayloadType() == "cbor") {
-            // char* topic;
-            // int length = strlen(_credentials->getDeviceId()) + 14;  // 14 fixed chars + deviceId
-            // topic = new char[length];
-            // sprintf(topic, "device/%s/state", _credentials->getDeviceId());
-            // topic[length-1] = 0;
-            // return mqtt.publish(topic, payload.getBytes(), payload.getSize(), 0, 0);
-        // } else if (payload.getPayloadType() == "json") {
-            // char topic[128];
-            // snprintf(topic, sizeof topic, "%s%s%s%s%s", "device/", _credentials->getDeviceId(), "/asset/", payload.getAssetName(), "/state");
-            // debug("> Message Published to AllThingsTalk (JSON)");
-            // debugVerbose("Asset:", ' ');
-            // debugVerbose(payload.getAssetName(), ',');
-            // debugVerbose(" Value:", ' ');
-            // debugVerbose(payload.getString());
-            // return mqtt.publish(topic, payload.getBytes(), payload.getSize(), 0, 0);
-            // //return publishMqttMessage(assetName.c_str(), (char*)json.c_str(), true);
-        // }
-    // } else {
-        // debug("Can't send message because you're not connected!");
-        // return false;
-    // }
-// }
-
 bool AllThingsTalk_LTEM::setCallback() {
     // TODO
 }
@@ -252,6 +226,7 @@ char* AllThingsTalk_LTEM::getOperator() {
 }
 
 bool AllThingsTalk_LTEM::setOperator(const char* apn) {
+    debug("Setting operator (APN)...")
     if (r4x.setApn(apn)) {
         debug("APN Successfully set to: ", ' ');
         debug(apn);
