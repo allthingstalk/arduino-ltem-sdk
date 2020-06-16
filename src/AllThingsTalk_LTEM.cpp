@@ -246,8 +246,29 @@ void AllThingsTalk_LTEM::reboot() {
 }
 
 void AllThingsTalk_LTEM::loop() {
-
     mqtt.loop();
+    if (!mqtt.isConnected()) {
+        isSubscribed = false;
+    }
+    if (callbackEnabled == true && !isSubscribed) {
+        // Build the subscribe topic
+        char command_topic[256];
+        snprintf(command_topic, sizeof command_topic, "%s%s%s", "device/", _credentials->getDeviceId(), "/asset/+/command");
+        if (mqtt.subscribe(command_topic)) { // Subscribe to it
+            debugVerbose("Successfully subscribed to MQTT.");
+            isSubscribed = true;
+        } else {
+            debugVerbose("Failed to subscribe to MQTT!");
+            isSubscribed = false;
+        }
+    }
+
+    if (millis() - previousPing >= pingInterval*1000) {
+        if (!mqtt.ping()) {
+            debugVerbose("MQTT Ping failed this time.");
+        }
+        previousPing = millis();
+    }
 }
 
 // Add boolean callback (0)

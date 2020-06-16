@@ -67,6 +67,9 @@ private:
     Stream *debugSerial;
     bool debugVerboseEnabled;
     char* _APN;
+    bool isSubscribed;
+    unsigned long previousPing;
+    int pingInterval = 30; // Seconds
 
     // Actuations / Callbacks
     bool callbackEnabled = true;           // Variable for checking if callback is enabled
