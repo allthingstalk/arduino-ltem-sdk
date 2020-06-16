@@ -10,6 +10,8 @@ Sodaq_R4X r4x;
 Sodaq_SARA_R4XX_OnOff saraR4xxOnOff;
 Sodaq_R4X_MQTT r4x_mqtt;
 
+AllThingsTalk_LTEM *AllThingsTalk_LTEM::instance = nullptr;
+
 AllThingsTalk_LTEM::AllThingsTalk_LTEM(HardwareSerial &modemSerial, APICredentials &credentials, char* APN) {
     _modemSerial = &modemSerial;
     _credentials = &credentials;
@@ -77,6 +79,10 @@ bool AllThingsTalk_LTEM::init() {
     mqtt.setAuth(_credentials->getDeviceToken(), "arbitrary");
     mqtt.setClientId(generateUniqueID().c_str());
     mqtt.setKeepAlive(300);
+    if (callbackEnabled == true) {
+        mqtt.setPublishHandler(AllThingsTalk_LTEM::mqttCallback);
+    }
+
     _modemSerial->begin(r4x.getDefaultBaudrate()); // The transport layer is a Sodaq_R4X
     r4x.init(&saraR4xxOnOff, *_modemSerial);
     //r4x_mqtt.setR4Xinstance(&r4x, &AllThingsTalk_LTEM::connectNetwork); // Inform our mqtt instance that we use r4x as the transport
@@ -177,10 +183,6 @@ bool AllThingsTalk_LTEM::send(JsonPayload &payload) {
     }
 }
 
-bool AllThingsTalk_LTEM::setCallback() {
-    // TODO
-}
-
 bool AllThingsTalk_LTEM::registerDevice(const char* deviceSecret, const char* partnerId) {
   // TO BE IMPLEMENTED
 }
@@ -244,5 +246,224 @@ void AllThingsTalk_LTEM::reboot() {
 }
 
 void AllThingsTalk_LTEM::loop() {
+
     mqtt.loop();
+}
+
+// Add boolean callback (0)
+bool AllThingsTalk_LTEM::setActuationCallback(String asset, void (*actuationCallback)(bool payload)) {
+    debugVerbose("Adding a Boolean Actuation Callback for Asset:", ' ');
+    return tryAddActuationCallback(asset, (void*) actuationCallback, 0);
+}
+
+// Add integer callback (1)
+bool AllThingsTalk_LTEM::setActuationCallback(String asset, void (*actuationCallback)(int payload)) {
+    debugVerbose("Adding an Integer Actuation Callback for Asset:", ' ');
+    return tryAddActuationCallback(asset, (void*) actuationCallback, 1);
+}
+
+// Add double callback (2)
+bool AllThingsTalk_LTEM::setActuationCallback(String asset, void (*actuationCallback)(double payload)) {
+    debugVerbose("Adding a Double Actuation Callback for Asset:", ' ');
+    return tryAddActuationCallback(asset, (void*) actuationCallback, 2);
+}
+
+// Add float callback (3)
+bool AllThingsTalk_LTEM::setActuationCallback(String asset, void (*actuationCallback)(float payload)) {
+    debugVerbose("Beware that the maximum value of float in 32-bit systems is 2,147,483,647");
+    debugVerbose("Adding a Float Actuation Callback for Asset:", ' ');
+    return tryAddActuationCallback(asset, (void*) actuationCallback, 3);
+}
+
+// Add char callback (4)
+bool AllThingsTalk_LTEM::setActuationCallback(String asset, void (*actuationCallback)(const char* payload)) {
+    debugVerbose("Adding a Char Actuation Callback for Asset:", ' ');
+    return tryAddActuationCallback(asset, (void*) actuationCallback, 4);
+}
+
+// Add String callback (5)
+bool AllThingsTalk_LTEM::setActuationCallback(String asset, void (*actuationCallback)(String payload)) {
+    debugVerbose("Adding a String Actuation Callback for Asset:", ' ');
+    return tryAddActuationCallback(asset, (void*) actuationCallback, 5);
+}
+
+// Actual saving of added callbacks
+bool AllThingsTalk_LTEM::tryAddActuationCallback(String asset, void (*actuationCallback), int actuationCallbackArgumentType) {
+   if (actuationCallbackCount >= maximumActuations) {
+       debug("");
+       debug("You've added too many actuations. The maximum is", ' ');
+       debug(maximumActuations);
+       return false;
+   }
+    callbackEnabled = true;
+    actuationCallbacks[actuationCallbackCount].asset = asset;
+    actuationCallbacks[actuationCallbackCount].actuationCallback = actuationCallback;
+    actuationCallbacks[actuationCallbackCount].actuationCallbackArgumentType = actuationCallbackArgumentType;
+    actuationCallbackCount++;
+    debugVerbose(asset);
+    return true;
+}
+
+// Retrieve a specific callback based on asset
+ActuationCallback *AllThingsTalk_LTEM::getActuationCallbackForAsset(String asset) {
+    for (int i = 0; i < actuationCallbackCount; i++) {
+        if (asset == actuationCallbacks[i].asset) {
+            debugVerbose("Found Actuation Callback for Asset:", ' ');
+            debugVerbose(actuationCallbacks[i].asset);
+            return &actuationCallbacks[i];
+        }
+    }
+    return nullptr;
+}
+
+// Asset name extraction from MQTT topic
+String extractAssetNameFromTopic(String topic) {
+    // Topic is formed as: device/ID/asset/NAME/state
+    const int devicePrefixLength = 38;  // "device/ID/asset/"
+    const int stateSuffixLength = 8;  // "/state"
+    return topic.substring(devicePrefixLength, topic.length()-stateSuffixLength);
+}
+
+/* void ActuationCallback::execute(JsonVariant variant) {
+}
+*/
+
+// MQTT Callback for receiving messages
+void AllThingsTalk_LTEM::mqttCallback(const char* p_topic, const uint8_t *p_payload, size_t p_length) {
+    instance->debugVerbose("--------------------------------------");
+    instance->debug("< Message Received from AllThingsTalk");
+
+    String payload;
+    String topic(p_topic);
+    
+    instance->debugVerbose("Raw Topic:", ' ');
+    instance->debugVerbose(p_topic);
+
+    // Whole JSON Payload
+    for (uint8_t i = 0; i < p_length; i++) payload.concat((char)p_payload[i]);
+    instance->debugVerbose("Raw JSON Payload:", ' ');
+    instance->debugVerbose(payload);
+    
+    // Deserialize JSON
+    DynamicJsonDocument doc(256);
+    char json[256];
+    for (int i = 0; i < p_length; i++) {
+        json[i] = (char)p_payload[i];
+    }
+    auto error = deserializeJson(doc, json);
+    if (error) {
+        instance->debug("Parsing JSON failed. Code:", ' ');
+        instance->debug(error.c_str());
+        return;
+    }
+
+    // Extract time from JSON Document
+    instance->debugVerbose("Message Time:", ' ');
+    const char* time = doc["at"];
+    instance->debugVerbose(time);
+
+    String asset = extractAssetNameFromTopic(topic);
+    instance->debugVerbose("Asset Name:", ' ');
+    instance->debugVerbose(asset);
+
+    // Call actuation callback for this specific asset
+    ActuationCallback *actuationCallback = instance->getActuationCallbackForAsset(asset);
+    if (actuationCallback == nullptr) {
+        instance->debug("Error: There's no actuation callback for this asset.");
+        return;
+    }
+
+    // Create JsonVariant which we'll use to to check data type and convert if necessary
+    JsonVariant variant = doc["value"].as<JsonVariant>();
+
+    //actuationCallback->execute(variant);
+
+
+/*
+    instance->debug("------------------------------------------");
+    if (variant.is<bool>()) instance->debug("Value type: BOOLEAN");
+    if (variant.is<int>()) instance->debug("Value type: INTEGER");
+    if (variant.is<double>()) instance->debug("Value type: DOUBLE");
+    if (variant.is<float>()) instance->debug("Value type: FLOAT");
+    if (variant.is<char*>()) instance->debug("Value type: CHAR*");
+    instance->debug("------------------------------------------");
+*/
+
+    // BOOLEAN
+    if (actuationCallback->actuationCallbackArgumentType == 0 && variant.is<bool>()) {
+        bool value = doc["value"];
+        instance->debugVerbose("Called Actuation for Asset:", ' ');
+        instance->debugVerbose(actuationCallback->asset, ',');
+        instance->debugVerbose(" Payload Type: Boolean, Value:", ' ');
+        instance->debugVerbose(value);
+        reinterpret_cast<void (*)(bool payload)>(actuationCallback->actuationCallback)(value);
+        return;
+    }
+    
+    // INTEGER
+    if (actuationCallback->actuationCallbackArgumentType == 1 && variant.is<int>() && variant.is<double>()) {
+        int value = doc["value"];
+        instance->debugVerbose("Called Actuation for Asset:", ' ');
+        instance->debugVerbose(actuationCallback->asset, ',');
+        instance->debugVerbose(" Payload Type: Integer, Value:", ' ');
+        instance->debugVerbose(value);
+        reinterpret_cast<void (*)(int payload)>(actuationCallback->actuationCallback)(value);
+        return;
+    }
+
+    // DOUBLE
+    if (actuationCallback->actuationCallbackArgumentType == 2 && variant.is<double>()) {
+        double value = doc["value"];
+        instance->debugVerbose("Called Actuation for Asset:", ' ');
+        instance->debugVerbose(actuationCallback->asset, ',');
+        instance->debugVerbose(" Payload Type: Double, Value:", ' ');
+        instance->debugVerbose(value);
+        reinterpret_cast<void (*)(double payload)>(actuationCallback->actuationCallback)(value);
+        return;
+    }
+
+    // FLOAT
+    if (actuationCallback->actuationCallbackArgumentType == 3 && variant.is<float>()) {
+        float value = doc["value"];
+        instance->debugVerbose("Called Actuation for Asset:", ' ');
+        instance->debugVerbose(actuationCallback->asset, ',');
+        instance->debugVerbose(" Payload Type: Float, Value:", ' ');
+        instance->debugVerbose(value);
+        reinterpret_cast<void (*)(float payload)>(actuationCallback->actuationCallback)(value);
+        return;
+    }
+    
+    // CONST CHAR*
+    if (actuationCallback->actuationCallbackArgumentType == 4 && variant.is<char*>()) {
+        const char* value = doc["value"];
+        instance->debugVerbose("Called Actuation for Asset:", ' ');
+        instance->debugVerbose(actuationCallback->asset, ',');
+        instance->debugVerbose(" Payload Type: const char*, Value:", ' ');
+        instance->debugVerbose(value);
+        reinterpret_cast<void (*)(const char* payload)>(actuationCallback->actuationCallback)(value);
+        return;
+    }
+    
+    // STRING
+    if (actuationCallback->actuationCallbackArgumentType == 5 && variant.is<char*>()) {
+        String value = doc["value"];
+        instance->debugVerbose("Called Actuation for Asset:", ' ');
+        instance->debugVerbose(actuationCallback->asset, ',');
+        instance->debugVerbose(" Payload Type: String, Value:", ' ');
+        instance->debugVerbose(value);
+        reinterpret_cast<void (*)(String payload)>(actuationCallback->actuationCallback)(value);
+        return;
+    }
+    
+    // JSON ARRAY
+    if (variant.is<JsonArray>()) {
+        instance->debug("Receiving Arrays is not yet supported!");
+        return;
+    }
+    
+    // JSON OBJECT
+    if (variant.is<JsonObject>()) {
+        instance->debug("Receiving Objects is not yet supported!");
+        return;
+    }
 }

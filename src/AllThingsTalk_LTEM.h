@@ -11,7 +11,21 @@
 #include "JsonPayload.h"
 #include "APICredentials.h"
 
-// TODO: ABP + DEVICE + OTHERS
+class ActuationCallback {
+public:
+    String asset;
+    void *actuationCallback;
+    int actuationCallbackArgumentType;
+    //void execute(JsonVariant variant);
+};
+
+class AssetProperty {
+public:
+    String name;
+    String title;
+    String assetType;
+    String dataType;
+};
 
 class AllThingsTalk_LTEM {
 public:
@@ -24,7 +38,6 @@ public:
     //bool send(Payload &payload);
 	bool send(CborPayload &payload);
 	bool send(JsonPayload &payload);
-    bool setCallback();
     bool registerDevice(const char* deviceSecret, const char* partnerId);
     bool sendSMS(char* number, char* message);
     char* getFirmwareVersion();
@@ -33,6 +46,15 @@ public:
     bool setOperator(const char* apn);
     void reboot();
     void loop();
+
+    // Callbacks (Receiving Data)
+    // These will return 
+    bool setActuationCallback(String asset, void (*actuationCallback)(bool payload));
+    bool setActuationCallback(String asset, void (*actuationCallback)(int payload));
+    bool setActuationCallback(String asset, void (*actuationCallback)(double payload));
+    bool setActuationCallback(String asset, void (*actuationCallback)(float payload));
+    bool setActuationCallback(String asset, void (*actuationCallback)(const char* payload));
+    bool setActuationCallback(String asset, void (*actuationCallback)(String payload));
 
 private:
     template<typename T> void debug(T message, char separator = '\n');
@@ -45,6 +67,17 @@ private:
     Stream *debugSerial;
     bool debugVerboseEnabled;
     char* _APN;
+
+    // Actuations / Callbacks
+    bool callbackEnabled = true;           // Variable for checking if callback is enabled
+    //void mqttCallback(char* p_topic, const uint8_t *p_payload, unsigned int p_length); // ESP8266 Specific Line
+    static AllThingsTalk_LTEM* instance; // Internal callback saving for non-ESP devices (e.g. MKR)
+    static void mqttCallback(const char* p_topic, const uint8_t *p_payload, size_t p_length); // Static is only for MKR
+    static const int maximumActuations = 32;
+    ActuationCallback actuationCallbacks[maximumActuations];
+    int actuationCallbackCount = 0;
+    bool tryAddActuationCallback(String asset, void *actuationCallback, int actuationCallbackArgumentType);
+    ActuationCallback *getActuationCallbackForAsset(String asset);
 };
 
 #endif
