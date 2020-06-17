@@ -73,6 +73,7 @@ const int     GPS_RETRY_COUNT   = 1;
 void setup() {
   debugSerial.begin(115200);
   while (!debugSerial && millis() < 10000) {}
+  att.debugPort(debugSerial);
 
   debugSerial.println("EXPLANATION OF LIGHT SEQUENCE");
   debugSerial.println("-----------------------------");

@@ -57,8 +57,9 @@ float temperature, humidity;
 uint8_t sensorType;
 
 void setup() {
-  debugSerial.begin(9600);
+  debugSerial.begin(115200);
   while (!debugSerial && millis() < 10000) {}
+  att.debugPort(debugSerial);
   Wire.begin();
   delay(1000);
   initTphSensor();

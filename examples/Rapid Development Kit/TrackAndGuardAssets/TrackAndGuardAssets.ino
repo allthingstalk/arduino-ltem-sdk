@@ -74,6 +74,7 @@ bool          alarm          = false;
 void setup() {
   debugSerial.begin(115200);
   while (!debugSerial && millis() < 10000) {}
+  att.debugPort(debugSerial);
   led.setLight(led.MAGENTA);
   att.setActuationCallback("lock", lockCallback);
   led.setLight(led.GREEN, true);
