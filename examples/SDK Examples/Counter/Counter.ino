@@ -34,7 +34,7 @@
 #define modemSerial Serial1
 
 APICredentials credentials(SPACE_ENDPOINT, DEVICE_TOKEN, DEVICE_ID);
-AllThingsTalk_LTEM modem(modemSerial, credentials, APN);
+AllThingsTalk_LTEM att(modemSerial, credentials, APN);
 // You can choose if you want to send payloads using "CborPayload" or "JsonPayload"
 // Check the README of this SDK to learn about the differences
 CborPayload payload;
@@ -48,8 +48,8 @@ unsigned long previousMillis;
 void setup() {
   debugSerial.begin(115200);
   while (!debugSerial  && millis() < 10000) {}
-  modem.debugPort(debugSerial); // Set port for serialMonitor, true:full debug mode
-  modem.init();
+  att.debugPort(debugSerial); // Set port for serialMonitor, true:full debug mode
+  att.init();
 }
 
 void loop() {  
@@ -58,8 +58,8 @@ void loop() {
     payload.reset();
     payload.set("counter", counter); // Sends current counter state to "counter" asset on AllThingsTalk
     debugSerial.print("Counter = ");
-    debugSerial.println(count);
-    if (modem.send(payload)){
+    debugSerial.println(counter);
+    if (att.send(payload)){
       counter++;
       if (counter > 10) {
         counter = 1;
