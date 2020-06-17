@@ -40,14 +40,18 @@ template<typename T> void AllThingsTalk_LTEM::debugVerbose(T message, char separ
     }
 }
 
-void AllThingsTalk_LTEM::debugPort(Stream &debugSerial, bool verbose) {
+void AllThingsTalk_LTEM::debugPort(Stream &debugSerial, bool verbose, bool verboseAT) {
     debugVerboseEnabled = verbose;
     this->debugSerial = &debugSerial;
     debug("");
     debug("------------- AllThingsTalk LTE-M SDK Debug Output Begin -------------");
     if (verbose) {
-        debugVerbose("Debug Level: Verbose. You'll also see AT Commands coming in and out from the Modem.");
-        r4x.setDiag(debugSerial);
+        if (verboseAT) {
+            debugVerbose("Debug Level: Verbose + AT Commands");
+            r4x.setDiag(debugSerial);
+        } else {
+            debugVerbose("Debug Level: Verbose");
+        }
     } else {
         debug("Debug Level: Normal");
     }
@@ -124,21 +128,41 @@ bool AllThingsTalk_LTEM::connectNetwork() {
 
 bool AllThingsTalk_LTEM::connectMqtt() {
     debug("Connecting to MQTT...");
-    if (!r4x_mqtt.isAliveMQTT()) {
-        int connectRetry = 0;
-        while (!mqtt.open() && connectRetry < 5) {
-            connectRetry++;
+    int connectRetry = 0;
+    // Use mqtt.ping to check if there's a real connection towards broker. Try 10 times before giving up.
+    while (!mqtt.ping() && connectRetry < 10) {
+        connectRetry++;
+    }
+    if (connectRetry != 10) {
+        debug("Successfully connected to MQTT!");
+        if (callbackEnabled) {
+            // Build the subscribe topic
+            char command_topic[256];
+            snprintf(command_topic, sizeof command_topic, "%s%s%s", "device/", _credentials->getDeviceId(), "/asset/+/command");
+            if (mqtt.subscribe(command_topic)) { // Subscribe to it
+                debugVerbose("Successfully subscribed to MQTT.");
+            } else {
+                debugVerbose("Failed to subscribe to MQTT!");
+            }
         }
-        if (r4x_mqtt.isAliveMQTT()) {
-            debug("Successfully connected to MQTT!");
-            return true;
-        } else {
-            debug("Failed to connect to MQTT!");
-            return false;
-        }
-    } else {
-        debug("Already connected to MQTT!");
         return true;
+    } else {
+        debug("Failed to connect to MQTT!");
+        return false;
+    }
+}
+
+void AllThingsTalk_LTEM::maintainMqtt() {
+    if (callbackEnabled) { // Only maintain MQTT connection constantly if there's anything to wait for
+        if (mqtt.loop()) return; // If something is received, skip the rest of the method this time (saves energy)
+
+        if (millis() - previousPing >= pingInterval*1000) {
+            if (!mqtt.ping()) {
+                connectMqtt(); // Establish an MQTT connection again if ping failed
+                debugVerbose("MQTT Ping failed this time. Reconnecting AllThingsTalk...");
+            }
+            previousPing = millis();
+        }
     }
 }
 
@@ -248,31 +272,7 @@ void AllThingsTalk_LTEM::reboot() {
 }
 
 void AllThingsTalk_LTEM::loop() {
-    if (mqtt.loop()) {
-		return;
-	}
-    if (!mqtt.isConnected()) {
-        isSubscribed = false;
-    }
-    if (callbackEnabled == true && !isSubscribed) {
-        // Build the subscribe topic
-        char command_topic[256];
-        snprintf(command_topic, sizeof command_topic, "%s%s%s", "device/", _credentials->getDeviceId(), "/asset/+/command");
-        if (mqtt.subscribe(command_topic)) { // Subscribe to it
-            debugVerbose("Successfully subscribed to MQTT.");
-            isSubscribed = true;
-        } else {
-            debugVerbose("Failed to subscribe to MQTT!");
-            isSubscribed = false;
-        }
-    }
-
-    if (millis() - previousPing >= pingInterval*1000) {
-        if (!mqtt.ping()) {
-            debugVerbose("MQTT Ping failed this time.");
-        }
-        previousPing = millis();
-    }
+    maintainMqtt();
 }
 
 // Add boolean callback (0)

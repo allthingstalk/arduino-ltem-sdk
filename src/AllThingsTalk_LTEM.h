@@ -30,7 +30,7 @@ public:
 class AllThingsTalk_LTEM {
 public:
     AllThingsTalk_LTEM(HardwareSerial &modemSerial, APICredentials &credentials, char* APN);
-    void debugPort(Stream &debugSerial, bool verbose = false);
+    void debugPort(Stream &debugSerial, bool verbose = false, bool verboseAT = false);
     bool init();
     bool connect();
     bool disconnect();
@@ -62,6 +62,7 @@ private:
     String generateUniqueID();
     bool connectNetwork();
     bool connectMqtt();
+    void maintainMqtt();
     HardwareSerial *_modemSerial;
     Stream *debugSerial;
     APICredentials *_credentials;
@@ -69,7 +70,7 @@ private:
     bool debugVerboseEnabled;
     bool isSubscribed;
     char* _APN;
-    int pingInterval = 30; // Seconds
+    int pingInterval = 10; // Seconds
     unsigned long previousPing;
 
     // Actuations / Callbacks
