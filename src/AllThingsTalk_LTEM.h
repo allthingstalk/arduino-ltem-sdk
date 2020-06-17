@@ -70,7 +70,7 @@ private:
     bool debugVerboseEnabled;
     bool isSubscribed;
     char* _APN;
-    int pingInterval = 10; // Seconds
+    int pingInterval = 30; // Seconds
     unsigned long previousPing;
 
     // Actuations / Callbacks
