@@ -46,6 +46,14 @@ public:
     bool setOperator(const char* apn);
     void reboot();
     void loop();
+	
+	static void mqttCallback(const char* p_topic, const uint8_t *p_payload, size_t p_length);
+	static void handlePacket(uint8_t *pckt, size_t len);
+    static const int maximumActuations = 32;
+    ActuationCallback actuationCallbacks[maximumActuations];
+    int actuationCallbackCount = 0;
+    bool tryAddActuationCallback(String asset, void *actuationCallback, int actuationCallbackArgumentType);
+    ActuationCallback *getActuationCallbackForAsset(String asset);
 
     // Callbacks (Receiving Data)
     // These will return 
@@ -59,6 +67,7 @@ public:
 private:
     template<typename T> void debug(T message, char separator = '\n');
     template<typename T> void debugVerbose(T message, char separator = '\n');
+
     bool connectNetwork();
     bool connectMqtt();
     String generateUniqueID();
@@ -75,12 +84,8 @@ private:
     bool callbackEnabled = true;           // Variable for checking if callback is enabled
     //void mqttCallback(char* p_topic, const uint8_t *p_payload, unsigned int p_length); // ESP8266 Specific Line
     static AllThingsTalk_LTEM* instance; // Internal callback saving for non-ESP devices (e.g. MKR)
-    static void mqttCallback(const char* p_topic, const uint8_t *p_payload, size_t p_length); // Static is only for MKR
-    static const int maximumActuations = 32;
-    ActuationCallback actuationCallbacks[maximumActuations];
-    int actuationCallbackCount = 0;
-    bool tryAddActuationCallback(String asset, void *actuationCallback, int actuationCallbackArgumentType);
-    ActuationCallback *getActuationCallbackForAsset(String asset);
+     // Static is only for MKR
+	
 };
 
 #endif

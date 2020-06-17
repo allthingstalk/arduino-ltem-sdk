@@ -64,8 +64,8 @@ bool Sodaq_R4X_MQTT::sendMQTTPacket(uint8_t* pckt, size_t pckt_len)
 {
     if (isAliveMQTT()) {
         //_r4xInstance->execCommand("AT+USOGO=0,65535,8");
-        return ((_r4xInstance->socketWrite(_socketID, pckt, pckt_len) > 0)
-            && (_r4xInstance->socketFlush(_socketID)));
+        return ((_r4xInstance->socketWrite(_socketID, pckt, pckt_len) > 0);
+        //&& (_r4xInstance->socketFlush(_socketID)));
     }
 
     return false;

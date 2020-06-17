@@ -75,12 +75,13 @@ String AllThingsTalk_LTEM::generateUniqueID() {
 //TODO: PINS
 //TODO: LED
 bool AllThingsTalk_LTEM::init() {
+	AllThingsTalk_LTEM::instance = this;
     mqtt.setServer(_credentials->getSpace(), 1883);
     mqtt.setAuth(_credentials->getDeviceToken(), "arbitrary");
     mqtt.setClientId(generateUniqueID().c_str());
     mqtt.setKeepAlive(300);
     if (callbackEnabled == true) {
-        mqtt.setPublishHandler(AllThingsTalk_LTEM::mqttCallback);
+        mqtt.setPublishHandler(this->mqttCallback);
     }
 
     _modemSerial->begin(r4x.getDefaultBaudrate()); // The transport layer is a Sodaq_R4X
@@ -246,7 +247,9 @@ void AllThingsTalk_LTEM::reboot() {
 }
 
 void AllThingsTalk_LTEM::loop() {
-    mqtt.loop();
+    if (mqtt.loop()) {
+		return;
+	}
     if (!mqtt.isConnected()) {
         isSubscribed = false;
     }
@@ -263,12 +266,12 @@ void AllThingsTalk_LTEM::loop() {
         }
     }
 
-    if (millis() - previousPing >= pingInterval*1000) {
-        if (!mqtt.ping()) {
-            debugVerbose("MQTT Ping failed this time.");
-        }
-        previousPing = millis();
-    }
+    // if (millis() - previousPing >= pingInterval*1000) {
+        // if (!mqtt.ping()) {
+            // debugVerbose("MQTT Ping failed this time.");
+        // }
+        // previousPing = millis();
+    // }
 }
 
 // Add boolean callback (0)
@@ -348,10 +351,15 @@ String extractAssetNameFromTopic(String topic) {
 /* void ActuationCallback::execute(JsonVariant variant) {
 }
 */
+void AllThingsTalk_LTEM::handlePacket(uint8_t *pckt, size_t len)
+{
+	instance->debugVerbose("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@éééé");
+}
+
 
 // MQTT Callback for receiving messages
 void AllThingsTalk_LTEM::mqttCallback(const char* p_topic, const uint8_t *p_payload, size_t p_length) {
-    instance->debugVerbose("--------------------------------------");
+	instance->debugVerbose("--------------------------------------");
     instance->debug("< Message Received from AllThingsTalk");
 
     String payload;
