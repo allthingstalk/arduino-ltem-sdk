@@ -72,34 +72,35 @@ String AllThingsTalk_LTEM::generateUniqueID() {
     return id;
 }
 
+char* r4x_mqtt_APN;
+bool r4x_mqttConnectNetwork() {
+    if (r4x.isConnected()) {
+        return true;
+    } else {
+        return r4x.connect(r4x_mqtt_APN, URAT, MNOPROF, OPERATOR, M1_BAND_MASK, NB1_BAND_MASK);
+    }
+}
+
 //TODO: PINS
 //TODO: LED
 bool AllThingsTalk_LTEM::init() {
-	AllThingsTalk_LTEM::instance = this;
+	AllThingsTalk_LTEM::instance = this; // Important - Static pointer to our class
     mqtt.setServer(_credentials->getSpace(), 1883);
     mqtt.setAuth(_credentials->getDeviceToken(), "arbitrary");
     mqtt.setClientId(generateUniqueID().c_str());
     mqtt.setKeepAlive(300);
-    if (callbackEnabled == true) {
-        mqtt.setPublishHandler(this->mqttCallback);
-    }
-
+    if (callbackEnabled) mqtt.setPublishHandler(this->mqttCallback);
     _modemSerial->begin(r4x.getDefaultBaudrate()); // The transport layer is a Sodaq_R4X
     r4x.init(&saraR4xxOnOff, *_modemSerial);
-    //r4x_mqtt.setR4Xinstance(&r4x, &AllThingsTalk_LTEM::connectNetwork); // Inform our mqtt instance that we use r4x as the transport
-    //r4x_mqtt.setR4Xinstance(&r4x, std::bind(&AllThingsTalk_LTEM::connectNetwork, this));
-    r4x_mqtt.setR4Xinstance(&r4x, []{ return true; } );
+    r4x_mqtt_APN = this->_APN;
+    r4x_mqtt.setR4Xinstance(&r4x, r4x_mqttConnectNetwork);
     mqtt.setTransport(&r4x_mqtt);
     return connect();
 }
 
 bool AllThingsTalk_LTEM::connect() {
-    if (connectNetwork()) {
-        if (connectMqtt()) {
-            return true;
-        } else {
-            return false;
-        }
+    if (connectNetwork() && connectMqtt()) {
+        return true;
     } else {
         return false;
     }
@@ -266,12 +267,12 @@ void AllThingsTalk_LTEM::loop() {
         }
     }
 
-    // if (millis() - previousPing >= pingInterval*1000) {
-        // if (!mqtt.ping()) {
-            // debugVerbose("MQTT Ping failed this time.");
-        // }
-        // previousPing = millis();
-    // }
+    if (millis() - previousPing >= pingInterval*1000) {
+        if (!mqtt.ping()) {
+            debugVerbose("MQTT Ping failed this time.");
+        }
+        previousPing = millis();
+    }
 }
 
 // Add boolean callback (0)
@@ -346,14 +347,6 @@ String extractAssetNameFromTopic(String topic) {
     const int devicePrefixLength = 38;  // "device/ID/asset/"
     const int stateSuffixLength = 8;  // "/state"
     return topic.substring(devicePrefixLength, topic.length()-stateSuffixLength);
-}
-
-/* void ActuationCallback::execute(JsonVariant variant) {
-}
-*/
-void AllThingsTalk_LTEM::handlePacket(uint8_t *pckt, size_t len)
-{
-	instance->debugVerbose("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@éééé");
 }
 
 

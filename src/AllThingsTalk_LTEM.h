@@ -35,7 +35,6 @@ public:
     bool connect();
     bool disconnect();
     bool isConnected();
-    //bool send(Payload &payload);
 	bool send(CborPayload &payload);
 	bool send(JsonPayload &payload);
     bool registerDevice(const char* deviceSecret, const char* partnerId);
@@ -46,17 +45,8 @@ public:
     bool setOperator(const char* apn);
     void reboot();
     void loop();
-	
-	static void mqttCallback(const char* p_topic, const uint8_t *p_payload, size_t p_length);
-	static void handlePacket(uint8_t *pckt, size_t len);
-    static const int maximumActuations = 32;
-    ActuationCallback actuationCallbacks[maximumActuations];
-    int actuationCallbackCount = 0;
-    bool tryAddActuationCallback(String asset, void *actuationCallback, int actuationCallbackArgumentType);
-    ActuationCallback *getActuationCallbackForAsset(String asset);
 
     // Callbacks (Receiving Data)
-    // These will return 
     bool setActuationCallback(String asset, void (*actuationCallback)(bool payload));
     bool setActuationCallback(String asset, void (*actuationCallback)(int payload));
     bool setActuationCallback(String asset, void (*actuationCallback)(double payload));
@@ -65,27 +55,31 @@ public:
     bool setActuationCallback(String asset, void (*actuationCallback)(String payload));
 
 private:
+    static AllThingsTalk_LTEM* instance;
     template<typename T> void debug(T message, char separator = '\n');
     template<typename T> void debugVerbose(T message, char separator = '\n');
 
+    String generateUniqueID();
     bool connectNetwork();
     bool connectMqtt();
-    String generateUniqueID();
     HardwareSerial *_modemSerial;
-    APICredentials *_credentials;
     Stream *debugSerial;
+    APICredentials *_credentials;
+
     bool debugVerboseEnabled;
-    char* _APN;
     bool isSubscribed;
-    unsigned long previousPing;
+    char* _APN;
     int pingInterval = 30; // Seconds
+    unsigned long previousPing;
 
     // Actuations / Callbacks
-    bool callbackEnabled = true;           // Variable for checking if callback is enabled
-    //void mqttCallback(char* p_topic, const uint8_t *p_payload, unsigned int p_length); // ESP8266 Specific Line
-    static AllThingsTalk_LTEM* instance; // Internal callback saving for non-ESP devices (e.g. MKR)
-     // Static is only for MKR
-	
+    static const int maximumActuations = 32;
+    bool callbackEnabled = true;         // Variable for checking if callback is enabled
+	static void mqttCallback(const char* p_topic, const uint8_t *p_payload, size_t p_length);
+    ActuationCallback actuationCallbacks[maximumActuations];
+    int actuationCallbackCount = 0;
+    bool tryAddActuationCallback(String asset, void *actuationCallback, int actuationCallbackArgumentType);
+    ActuationCallback *getActuationCallbackForAsset(String asset);
 };
 
 #endif
