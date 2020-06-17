@@ -4,7 +4,7 @@
  * /_/ \_\_|_| |_| |_||_|_|_||_\__, /__/ |_|\__,_|_|_\_\ |___/___/|_|\_\
  *                             |___/
  *
- * Copyright 2019 AllThingsTalk
+ * Copyright 2020 AllThingsTalk
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,6 @@
  * limitations under the License.
  *
  *
- *
- *
  * WHAT DOES THIS SKETCH DO:
  * -------------------------
  * When you have created a device on the AllThingsTalk Maker platform (https://maker.allthingstalk.com/)
@@ -29,82 +27,44 @@
  * 
  */
  
-#include <APICredentials.h>
-#include <CborPayload.h>
-#include <LTEmModem.h>
-#include <Device.h>
-
+#include <AllThingsTalk_LTEM.h>
 #include "keys.h"
 
 #define debugSerial SerialUSB
-
-//comment line below if you want to use MKR1500 board
-#define SODAQ_SFF_AFF
-
-#ifdef SODAQ_SFF_AFF
-  #define ltemSerial Serial1
-#else
-  #define ltemSerial SerialSARA
-#endif
-
-void callback(const char* data);
+#define modemSerial Serial1
 
 APICredentials credentials(SPACE_ENDPOINT, DEVICE_TOKEN, DEVICE_ID);
-LTEmModem modem(ltemSerial, debugSerial, credentials, false, callback);  //false: disables full debug mode
-
+AllThingsTalk_LTEM modem(modemSerial, credentials, APN);
+// You can choose if you want to send payloads using "CborPayload" or "JsonPayload"
+// Check the README of this SDK to learn about the differences
 CborPayload payload;
+//JsonPayload payload;
 
+
+int sendInterval = 5; // Sending interval in seconds
+int counter = 1; // Initial value of counter (resets after reaching 10)
 unsigned long previousMillis;
 
 void setup() {
   debugSerial.begin(115200);
   while (!debugSerial  && millis() < 10000) {}
-
-  if (modem.init(APN)) //wake up modem
-  {
-    debugSerial.println("Modem init succeeded");
-  }
-  else
-  {
-    setSetupError("Modem init failed");
-  }
+  modem.debugPort(debugSerial); // Set port for serialMonitor, true:full debug mode
+  modem.init();
 }
 
-
-int count = 1;
 void loop() {  
-  if (millis() - previousMillis > 5000) //send message every 5seconds
-  {
+  att.loop(); // Keep the network and connection towards AllThingsTalk alive
+  if (millis() - previousMillis > sendInterval * 1000) {  // Send message every sendInterval seconds
     payload.reset();
-    payload.set("counter", count);
-
-    debugSerial.print("Counter =");
+    payload.set("counter", counter); // Sends current counter state to "counter" asset on AllThingsTalk
+    debugSerial.print("Counter = ");
     debugSerial.println(count);
-    
-    if (modem.send(payload))
-    {
-      count++;
-      if (count > 10) count = 1;
+    if (modem.send(payload)){
+      counter++;
+      if (counter > 10) {
+        counter = 1;
+      }
     }
-    else
-    {
-      debugSerial.print("Couldn't sent payload");
-    }
-
     previousMillis = millis();
   }
-}
-
-void setSetupError(char* message)
-{
-  debugSerial.println(message);
-  
-  exit(0);
-}
-
-void callback(const char* data)
-{
-  debugSerial.println("**************** IN CALLBACK ********************");
-  
-  debugSerial.println(data);
 }

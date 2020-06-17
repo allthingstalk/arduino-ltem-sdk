@@ -1,9 +1,0 @@
-{
-    "files.associations": {
-        "locale": "cpp",
-        "string": "cpp",
-        "chrono": "cpp",
-        "cstddef": "cpp",
-        "functional": "cpp"
-    }
-}

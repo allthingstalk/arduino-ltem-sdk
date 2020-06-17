@@ -25,7 +25,7 @@
  *
  * LED behaviour:
  * ---------------------------------
- * Blue: initialization with modem and making connection with backend
+ * Blue: initialization with att and making connection with backend
  * Yellow: reading temperature and humidity
  * White: sending data
  * Green: success
@@ -36,23 +36,17 @@
  *  - Adafruit BME280
  *  - Seeed (Grove) BME280
  */
-
-#include <APICredentials.h>
-#include <CborPayload.h>
-#include <LTEmModem.h>
+#include <AllThingsTalk_LTEM.h>
 #include <LED.h>
 #include "src/Adafruit_BME280.h"
 #include "src/Seeed_BME280.h"
 #include "keys.h"
 
 #define debugSerial SerialUSB
-#define ltemSerial Serial1
-
-void callback(const char* data);
+#define modemSerial Serial1
 
 APICredentials credentials(SPACE_ENDPOINT, DEVICE_TOKEN, DEVICE_ID);
-LTEmModem modem(ltemSerial, debugSerial, credentials, false, callback); // Change "false" to true to enable full debug mode
-
+AllThingsTalk_LTEM att(modemSerial, credentials, APN);
 CborPayload payload;
 Adafruit_BME280 tph1;
 BME280 tph2;
@@ -69,12 +63,10 @@ void setup() {
   delay(1000);
   initTphSensor();
   led.setLight(led.BLUE);
-  if (modem.init(APN)) {
-    debugSerial.println("Modem init succeeded");
+  if (att.init()) {
     led.setLight(led.GREEN, true);
   } else {
-    debugSerial.println("Modem init failed");
-    setSetupError("Modem init failed");
+    setSetupError("AllThingsTalk LTE-M Initialization Failed");
   }
 }
 
@@ -112,12 +104,8 @@ void setSetupError(char* message) {
   exit(0);
 }
 
-void callback(const char* data) {
-  debugSerial.println("**************** IN CALLBACK ********************");
-  debugSerial.println(data);
-}
-
 void loop() {
+  att.loop(); // Keep the network and connection to AllThingsTalk alive
   led.setLight(led.YELLOW);
   readTphData();
   delay(1000);
@@ -130,12 +118,9 @@ void loop() {
   debugSerial.print("Humidity: ");
   debugSerial.println(humidity);
   led.setLight(led.WHITE);
-  debugSerial.println("Trying to send payload");
-  if (modem.send(payload)) {
-    debugSerial.println("Sending succeeded");
+  if (att.send(payload)) {
     led.setLight(led.GREEN, true);
   } else {
-    debugSerial.println("Sending failed");
     led.setLight(led.RED, true);
   }
   delay(1000);

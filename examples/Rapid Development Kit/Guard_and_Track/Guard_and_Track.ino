@@ -4,7 +4,7 @@
  * /_/ \_\_|_| |_| |_||_|_|_||_\__, /__/ |_|\__,_|_|_\_\ |___/___/|_|\_\
  *                             |___/
  *
- * Copyright 2019 AllThingsTalk
+ * Copyright 2020 AllThingsTalk
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@
  *
  * WHAT DOES THIS SKETCH DO:
  * -------------------------
- * This sketch can be used as a lock mechanism for your bicycle, motor, car, ...
+ * This sketch transforms your device to a lock for your car, motor, bicycle or whatever else crosses your mind!
  * When you send an actuation 'Lock', the device comes in lock state and when there is movement
  * an alarm is triggered and gps coordinates are sent if possible.
  * As long as the device is in lock state and an alarm was triggered it will try to send
@@ -36,23 +36,16 @@
  * Red: blinking (error initialisation, you have to reset to modem), normal (error in sending)
  */
  
-#include <APICredentials.h>
-#include <CborPayload.h>
-#include <LTEmModem.h>
+#include <AllThingsTalk_LTEM.h>
 #include <LED.h>
-
 #include <Wire.h>
-#include <TimeLib.h>
-#include <ArduinoJson.h>
-#include <Sodaq_UBlox_GPS.h>
-#include <Sodaq_LSM303AGR.h>
-
+#include "src/TimeLib.h"
+#include "src/Sodaq_UBlox_GPS.h"
+#include "src/Sodaq_LSM303AGR.h"
 #include "keys.h"
 
 #define debugSerial SerialUSB
-#define ltemSerial Serial1
-#define powerPin SARA_ENABLE
-#define enablePin -1
+#define modemSerial Serial1
 
 struct unix {
   long get(int y, int m = 0, int d = 0, int h = 0, int i = 0, int s = 0) {
@@ -62,150 +55,77 @@ struct unix {
   }
 } unix;
 
-void callback(const char* data);
-
 APICredentials credentials(SPACE_ENDPOINT, DEVICE_TOKEN, DEVICE_ID);
-LTEmModem modem(ltemSerial, debugSerial, credentials, false, callback); //false: disables full debug mode
-LED led;
-
+AllThingsTalk_LTEM att(modemSerial, credentials, APN);
 CborPayload payload;
 Sodaq_LSM303AGR accel;
+LED led;
 
 unsigned long previousMillis;
-volatile bool acc_int_flag = false;
-
-double acc = 80.0;   // Acceleration% (100% = 8g)
-double threshhold = 1.0;  //The lower the value, the quicker an interrupt will be generated
-int acd = 0;  // Acceleration Duration
-
-bool alarm = false;
-bool lock = false;
-
-
+volatile bool suddenMovement = false;
+double        accPercentage  = 80.0;    // Acceleration % (100% = 8g)
+int           accDuration    = 0;       // Acceleration Duration
+double        accThreshhold  = 1.0;     // Sensitivity of the accelerometer. The lower the value, the quicker an interrupt will be generated.
+int           gpsTimeout     = 120;     // Number of seconds before GPS fix times out
+int           alarmSendInterval = 60;   // Seconds
+bool          lock           = false;
+bool          alarm          = false;
 
 void setup() {
   debugSerial.begin(115200);
   while (!debugSerial && millis() < 10000) {}
-
+  led.setLight(led.MAGENTA);
+  att.setActuationCallback("lock", lockCallback);
+  led.setLight(led.GREEN, true);
+  delay(1000);
+  led.setLight(led.OFF);
   initGPS();
-  initAccelerometer();  
-  accel.disableAccelerometer(); 
-
+  initAccelerometer();
+  accel.disableAccelerometer();
   led.setLight(led.BLUE);
-  if (modem.init(APN)) //initialise modem
-  {
+  if (att.init()) {
     led.setLight(led.GREEN, true);
-
-    debugSerial.println("Ready");
-    debugSerial.println("Subscribe to lock asset");
-
-    led.setLight(led.MAGENTA);
-    if (modem.listen("lock"))
-    {
-      debugSerial.println("Subscribe succeeded");
-      
-      led.setLight(led.GREEN, true);
-      delay(1000);
-      led.setLight(led.OFF);
-    }
-    else
-    {
-      setSetupError("Could not subscribe to message");
-    }
-  }
-  else
-  {
-    setSetupError("Modem init failed");
+  } else {
+    setSetupError("AllThingsTalk LTE-M Initialization Failed");
   }
 }
 
-void sendData(bool shock = false)
-{
-  led.setLight(led.YELLOW);
-
+void sendData(bool shock = false) {
+  led.setLight(led.YELLOW);  // Yellow - Searching for GPS
   debugSerial.println("Trying to get GPS fix (timeout 2 minutes)");
-    
-  uint32_t timeout = 120000;
-  if (sodaq_gps.scan(false, timeout)) //wait for fix
-  {      
+  if (sodaq_gps.scan(false, gpsTimeout * 1000)) { // Wait for GPS fix
     led.setLight(led.WHITE);
-    GeoLocation geoLocation(sodaq_gps.getLat(), sodaq_gps.getLon(), 0);
+    GeoLocation geoLocation(sodaq_gps.getLat(), sodaq_gps.getLon(), 0); // Saves the current GPS coordinates
     payload.reset();
-
-    if (shock)
-      payload.set("shock", true);
-      
+    if (shock) payload.set("shock", true);
+    payload.set("loc", geoLocation);
+    payload.set("accel", accel.getX());
+  } else {
+    GeoLocation geoLocation(0, 0, 0); // Reset the GPS coordinates
+    payload.reset();
+    if (shock) payload.set("shock", true);
     payload.set("loc", geoLocation);
     payload.set("accel", accel.getX());
   }
-  else
-  {
-    GeoLocation geoLocation(0, 0, 0);
-    payload.reset();
-
-    if (shock)
-      payload.set("shock", true);
-      
-    payload.set("loc", geoLocation);
-    payload.set("accel", accel.getX());
-  }
-
-  debugSerial.println("Sending payload");
-  if (modem.send(payload))
-  {
+  if (att.send(payload)) { // Send the payload
     led.setLight(led.GREEN);
-    debugSerial.println("Sending succesful");
-  }
-  else
-  {
+  } else {
     led.setLight(led.RED);
-    debugSerial.println("Sending failed");
   }
-
   delay(1000);
   led.setLight(led.OFF);
 }
 
-void loop() {  
-  payload.reset();
-  modem.send(payload);
-  delay(2000);
-  
-  if (acc_int_flag && lock)
-  {
-    accel.disableAccelerometer();
-    
-    acc_int_flag = false;
-    alarm = true;
-    
-    debugSerial.println("Shock Detected");
-
-    sendData(true);
-  }
-
-  //if there is an alarm, send location every 60 seconds
-  if (alarm && millis() - previousMillis > 60000)
-  {
-    sendData();
-    previousMillis = millis();
-  }
-}
-
-void initAccelerometer()
-{
+void initAccelerometer() {
   accel.rebootAccelerometer();
   delay(1000);
-  
   pinMode(ACCEL_INT1, INPUT);
   attachInterrupt(ACCEL_INT1, interrupt_event, CHANGE);
-
-  SYSCTRL->XOSC32K.bit.RUNSTDBY = 1; //Make sure interrupt is triggered when in deepsleep mode
-
-  // Enable interrupts on the SAMD 
+  SYSCTRL->XOSC32K.bit.RUNSTDBY = 1; // Make sure interrupt is triggered when in deepsleep mode
+  // Enable interrupts on the SAMD
   GCLK->CLKCTRL.reg = GCLK_CLKCTRL_ID(GCM_EIC) |
       GCLK_CLKCTRL_GEN_GCLK1 |
       GCLK_CLKCTRL_CLKEN;
-
  // Enable the Accelerometer
  accel.enableAccelerometer(
       Sodaq_LSM303AGR::LowPowerMode,
@@ -213,69 +133,66 @@ void initAccelerometer()
       Sodaq_LSM303AGR::XYZ,
       Sodaq_LSM303AGR::Scale8g,
       true);
-      
   delay(100);
-      
   // If XYZ goes below or above threshold the interrupt is triggered
   accel.enableInterrupt1(
       Sodaq_LSM303AGR::XHigh | Sodaq_LSM303AGR::XLow | Sodaq_LSM303AGR::YHigh | Sodaq_LSM303AGR::YLow | Sodaq_LSM303AGR::ZHigh | Sodaq_LSM303AGR::ZLow,
-      acc * threshhold / 100.0,
-      acd,
+      accPercentage * accThreshhold / 100.0,
+      accDuration,
       Sodaq_LSM303AGR::MovementRecognition);
 }
 
-void initGPS()
-{
+void initGPS() {
   sodaq_gps.init(GPS_ENABLE);
 }
 
-void setSetupError(char* message)
-{
+void setSetupError(char* message) {
   debugSerial.println(message);
-
   led.setLight(led.RED, true, 10);
-  
   exit(0);
 }
 
-void interrupt_event()
-{
-  acc_int_flag = true;
-  accel.disableAccelerometer(); 
+void interrupt_event() {
+  suddenMovement = true;
+  accel.disableAccelerometer();
 }
 
-void callback(const char* data)
-{
-  debugSerial.println(data);
-  
-  DynamicJsonBuffer jsonBuffer;
-  JsonObject& root = jsonBuffer.parseObject(data);
-
-  bool locked = root["value"].as<bool>();
-  if (locked)
-  {
-    debugSerial.println("Device locked");
+void lockCallback(bool locked) {
+  if (locked) {
+    debugSerial.println("Device Locked");
     accel.enableAccelerometer();
-    
     lock = true;
-
-    //Send the incoming value to backend to be sure the lock is activated
     payload.reset();
-    payload.set("lock", true);
-    modem.send(payload);
-  }
-  else
-  {
+    payload.set("lock", true); // Send the incoming value to backend to be sure the lock is activated
+    att.send(payload);
+  } else {
     debugSerial.println("Device Unlocked");
     accel.disableAccelerometer();
-    
     lock = false;
-    alarm = false; //device is unlocked, disable alarm
-    acc_int_flag = false;
-
-    //Send the incoming value to backend to be sure the lock is deactivated
+    alarm = false; // Device is unlocked, disable alarm
+    suddenMovement = false;
     payload.reset();
-    payload.set("lock", false);
-    modem.send(payload);
+    payload.set("lock", false); //Send the incoming value to backend to be sure the lock is deactivated
+    att.send(payload);
+  }
+}
+
+void loop() {
+  // Keep the modem and the connection towards AllThingsTalk alive
+  att.loop(); 
+
+  // If there's a shock and your device is locked, gather and send data to AllThingsTalk
+  if (suddenMovement && lock) {
+    accel.disableAccelerometer();
+    suddenMovement = false;
+    alarm = true;
+    debugSerial.println("Shock Detected");
+    sendData(true);
+  }
+  
+  // Send location every [alarmSendInterval] if alarm is enabled
+  if (alarm && millis() - previousMillis > alarmSendInterval*1000) {
+    sendData();
+    previousMillis = millis();
   }
 }

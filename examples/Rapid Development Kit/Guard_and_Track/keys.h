@@ -1,16 +1,14 @@
 #ifndef KEYS_h
 #define KEYS_h
 
-// Enter your Allthingstalk device authentication
+// AllThingsTalk Device Authentication
 char* DEVICE_ID = "yourdeviceid";
 char* DEVICE_TOKEN = "yourdevicetoken";
 
-// Enter APN of your LTE-M service provider
-// See docs: 
+// Enter APN of your LTE-M Service Provider
 char* APN = "starter.att.iot";
 
-// Enter the API endpoint for your Allthingstalk space
+// AllThingsTalk Space Endpoint (leave as is if unfamiliar)
 char* SPACE_ENDPOINT = "api.allthingstalk.io";
-
 
 #endif
