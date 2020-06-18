@@ -31,11 +31,14 @@
  * Green: success
  * Red: error
  * 
- * This example relies on 3 external libraries which were included (inside the example folder) for your convenience:
- *  - Adafruit Unified Sensor
- *  - Adafruit BME280
- *  - Seeed (Grove) BME280
+ * Dependencies:
+ * --------------------------
+ * This sketch uses external libraries that were added alongside the sketch itself for convenience.
+ * - "Adafruit Unified Sensor" by Adafruit
+ * - "Adafruit BME280" by Adafruit
+ * - "Seeed BME280" by Seeed Studio
  */
+
 #include <AllThingsTalk_LTEM.h>
 #include <LED.h>
 #include "src/Adafruit_BME280.h"

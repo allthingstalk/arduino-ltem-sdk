@@ -34,6 +34,13 @@
  * White: sending data
  * Green: success
  * Red: error
+ * 
+ * Dependencies:
+ * --------------------------
+ * This sketch uses external libraries that were added alongside the sketch itself for convenience.
+ * - "Time" by Michael Margolis, maintained by Paul Stoffregen
+ * - "Sodaq_UBlox_GPS" by Keestux and SODAQ, maintained by Kees Bakker
+ * - "Sodaq_LSM303AGR" by Alex Tsamakos and SODAQ, maintained by Kees Bakker
  */
 
 #include <AllThingsTalk_LTEM.h>
