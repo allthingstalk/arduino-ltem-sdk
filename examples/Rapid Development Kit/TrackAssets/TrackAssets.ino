@@ -77,19 +77,19 @@ void setup() {
 
   debugSerial.println("EXPLANATION OF LIGHT SEQUENCE");
   debugSerial.println("-----------------------------");
-  debugSerial.println("BLUE: trying to initialise att");
-  debugSerial.println("--> GREEN: init succeeded");
-  debugSerial.println("--> RED: init failed");
+  debugSerial.println("BLUE: Trying to initialise AllThingsTalk");
+  debugSerial.println("--> GREEN: Initialization succeeded");
+  debugSerial.println("--> RED: Initialization failed");
   debugSerial.println();
-  debugSerial.println("WHEN SHCOK DETECTED");
+  debugSerial.println("WHEN SHOCK DETECTED");
   debugSerial.println("-------------------");
-  debugSerial.println("YELLOW: trying to get GPS fix");
-  debugSerial.println("--> GREEN: GPS fix found");
-  debugSerial.println("--> RED: No GPS fix");
+  debugSerial.println("YELLOW: Trying to get GPS fix");
+  debugSerial.println("--> GREEN: GPS Fix Found");
+  debugSerial.println("--> RED: No GPS Fix");
   debugSerial.println();
-  debugSerial.println("WHITE: trying to send data to AllThingsTalk platform");
-  debugSerial.println("--> GREEN: sending successful");
-  debugSerial.println("--> RED: sending failed");
+  debugSerial.println("WHITE: Trying to send data to AllThingsTalk");
+  debugSerial.println("--> GREEN: Sending successful");
+  debugSerial.println("--> RED: Sending failed");
   debugSerial.println();
   
   Wire.begin();
