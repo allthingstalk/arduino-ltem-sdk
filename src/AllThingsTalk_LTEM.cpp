@@ -101,14 +101,16 @@ bool AllThingsTalk_LTEM::init() {
     r4x_mqtt_APN = this->_APN;
     r4x_mqtt.setR4Xinstance(&r4x, r4x_mqttConnectNetwork);
     mqtt.setTransport(&r4x_mqtt);
-    if (debugVerboseEnabled) { // Move this somewhere else - it doesn't show information
-        showDiagnosticInfo();
-    }
+    
     return connect();
 }
 
 bool AllThingsTalk_LTEM::connect() {
     if (connectNetwork() && connectMqtt()) {
+		//Edit: Alain; I commented out debugVerboseEnabled, because I think we always need to show this information
+		//if (debugVerboseEnabled) { // Move this somewhere else - it doesn't show information
+			showDiagnosticInfo();
+		//}
         return true;
     } else {
         return false;
