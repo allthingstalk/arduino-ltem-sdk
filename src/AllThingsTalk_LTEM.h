@@ -35,8 +35,8 @@ public:
     bool connect();
     bool disconnect();
     bool isConnected();
-	bool send(CborPayload &payload);
-	bool send(JsonPayload &payload);
+    bool send(CborPayload &payload);
+    bool send(JsonPayload &payload);
     bool registerDevice(const char* deviceSecret, const char* partnerId);
     bool sendSMS(char* number, char* message);
     char* getFirmwareVersion();
