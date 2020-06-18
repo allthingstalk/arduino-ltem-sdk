@@ -107,10 +107,6 @@ bool AllThingsTalk_LTEM::init() {
 
 bool AllThingsTalk_LTEM::connect() {
     if (connectNetwork() && connectMqtt()) {
-		//Edit: Alain; I commented out debugVerboseEnabled, because I think we always need to show this information
-		//if (debugVerboseEnabled) { // Move this somewhere else - it doesn't show information
-			showDiagnosticInfo();
-		//}
         return true;
     } else {
         return false;
@@ -125,6 +121,7 @@ bool AllThingsTalk_LTEM::connectNetwork() {
     } else {
         if (r4x.connect(_APN, URAT, MNOPROF, OPERATOR, M1_BAND_MASK, NB1_BAND_MASK)) {
             debug("Connected to Network!");
+            showDiagnosticInfo(); // Shows FW, IMEI, ICCID, IMSI, etc
             return true;
         } else {
             debug("Failed to connect to network!");
@@ -225,14 +222,16 @@ bool AllThingsTalk_LTEM::sendSMS(char* number, char* message) {
 }
 
 void AllThingsTalk_LTEM::showDiagnosticInfo() {
-    getFirmwareVersion();
-    getFirmwareRevision();
-    getIMEI();
-    getICCID();
-    getIMSI();
-    getOperator();
+    if (justBooted) {
+        getFirmwareVersion();
+        getFirmwareRevision();
+        getIMEI();
+        getICCID();
+        getIMSI();
+        getOperator();
+        justBooted = false;
+    }
 }
-
 
 char* AllThingsTalk_LTEM::getFirmwareVersion() {
     char buffer[128];

@@ -40,7 +40,6 @@ public:
     bool registerDevice(const char* deviceSecret, const char* partnerId);
     bool sendSMS(char* number, char* message);
     bool setOperator(const char* apn);
-    void showDiagnosticInfo();
     char* getFirmwareVersion();
     char* getFirmwareRevision();
     char* getIMEI();
@@ -67,6 +66,8 @@ private:
     bool connectNetwork();
     bool connectMqtt();
     void maintainMqtt();
+    bool justBooted = true;
+    void showDiagnosticInfo();
     HardwareSerial *_modemSerial;
     Stream *debugSerial;
     APICredentials *_credentials;
