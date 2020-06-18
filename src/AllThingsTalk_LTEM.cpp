@@ -93,12 +93,17 @@ bool AllThingsTalk_LTEM::init() {
     mqtt.setAuth(_credentials->getDeviceToken(), "arbitrary");
     mqtt.setClientId(generateUniqueID().c_str());
     mqtt.setKeepAlive(300);
-    if (callbackEnabled) mqtt.setPublishHandler(this->mqttCallback);
+    if (callbackEnabled) { 
+        mqtt.setPublishHandler(this->mqttCallback);
+    }
     _modemSerial->begin(r4x.getDefaultBaudrate()); // The transport layer is a Sodaq_R4X
     r4x.init(&saraR4xxOnOff, *_modemSerial);
     r4x_mqtt_APN = this->_APN;
     r4x_mqtt.setR4Xinstance(&r4x, r4x_mqttConnectNetwork);
     mqtt.setTransport(&r4x_mqtt);
+    if (debugVerboseEnabled) { // Move this somewhere else - it doesn't show information
+        showDiagnosticInfo();
+    }
     return connect();
 }
 
@@ -217,36 +222,82 @@ bool AllThingsTalk_LTEM::sendSMS(char* number, char* message) {
     // TO BE IMPLEMENTED
 }
 
+void AllThingsTalk_LTEM::showDiagnosticInfo() {
+    getFirmwareVersion();
+    getFirmwareRevision();
+    getIMEI();
+    getICCID();
+    getIMSI();
+    getOperator();
+}
+
+
 char* AllThingsTalk_LTEM::getFirmwareVersion() {
-    char versionBuffer[128];
-    if (r4x.getFirmwareVersion(versionBuffer, sizeof(versionBuffer))) {
-        debug("LTE-M Modem Firmware Version: ", ',');
-        debug(versionBuffer);
-        return versionBuffer;
+    char buffer[128];
+    if (r4x.getFirmwareVersion(buffer, sizeof(buffer))) {
+        debug("LTE-M Modem Firmware Version: ", ' ');
+        debug(buffer);
+        return buffer;
     } else {
         debug("Couldn't get the firmware version.");
         return "ERROR";
     }
 }
 
+char* AllThingsTalk_LTEM::getFirmwareRevision() {
+    char buffer[128];
+    if (r4x.getFirmwareRevision(buffer, sizeof(buffer))) {
+        debug("LTE-M Modem Firmware Revision: ", ' ');
+        debug(buffer);
+        return buffer;
+    } else {
+        debug("Couldn't get the firmware revision.");
+        return "ERROR";
+    }
+}
+
 char* AllThingsTalk_LTEM::getIMEI() {
-    char imeiBuffer[128];
-    if (r4x.getIMEI(imeiBuffer, sizeof(imeiBuffer))) {
-        debug("IMEI: ", ',');
-        debug(imeiBuffer);
-        return imeiBuffer;
+    char buffer[128];
+    if (r4x.getIMEI(buffer, sizeof(buffer))) {
+        debug("IMEI:", ' ');
+        debug(buffer);
+        return buffer;
     } else {
         debug("Couldn't get IMEI.");
         return "ERROR";
     }
 }
 
+char* AllThingsTalk_LTEM::getICCID() {
+    char buffer[128];
+    if (r4x.getCCID(buffer, sizeof(buffer))) {
+        debug("ICCID:", ' ');
+        debug(buffer);
+        return buffer;
+    } else {
+        debug("Couldn't get ICCID.");
+        return "ERROR";
+    }
+}
+
+char* AllThingsTalk_LTEM::getIMSI() {
+    char buffer[128];
+    if (r4x.getIMSI(buffer, sizeof(buffer))) {
+        debug("IMSI:", ' ');
+        debug(buffer);
+        return buffer;
+    } else {
+        debug("Couldn't get IMSI.");
+        return "ERROR";
+    }
+}
+
 char* AllThingsTalk_LTEM::getOperator() {
-    char operatorBuffer[128];
-    if (r4x.getOperatorInfoString(operatorBuffer, sizeof(operatorBuffer))) {
-        debug("Operator Info: ", ',');
-        debug(operatorBuffer);
-        return operatorBuffer;
+    char buffer[128];
+    if (r4x.getOperatorInfoString(buffer, sizeof(buffer))) {
+        debug("Operator Info:", ' ');
+        debug(buffer);
+        return buffer;
     } else {
         debug("Couldn't get Operator Info.");
         return "ERROR";

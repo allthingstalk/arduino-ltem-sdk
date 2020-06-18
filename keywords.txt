@@ -12,7 +12,11 @@ send	KEYWORD2
 registerDevice  KEYWORD2
 sendSMS KEYWORD2
 getFirmwareVersion  KEYWORD2
+getFirmwareRevision KEYWORD2
 getIMEI KEYWORD2
+getIMSI KEYWORD2
+getICCID    KEYWORD2
+showDiagnosticInfo  KEYWORD2
 getOperator KEYWORD2
 setOperator KEYWORD2
 reboot  KEYWORD2

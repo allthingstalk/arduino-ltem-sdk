@@ -39,10 +39,14 @@ public:
     bool send(JsonPayload &payload);
     bool registerDevice(const char* deviceSecret, const char* partnerId);
     bool sendSMS(char* number, char* message);
-    char* getFirmwareVersion();
-    char* getIMEI();
-    char* getOperator();
     bool setOperator(const char* apn);
+    void showDiagnosticInfo();
+    char* getFirmwareVersion();
+    char* getFirmwareRevision();
+    char* getIMEI();
+    char* getICCID();
+    char* getIMSI();
+    char* getOperator();
     void reboot();
     void loop();
 
