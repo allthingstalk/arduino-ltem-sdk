@@ -5,6 +5,24 @@
 The LTE-M SDK for Arduino provides an easy to use set of functions that support LTE-M LPWAN networks for the AllThingsTalk IoT Cloud.  
 LTE-M RDK (Rapid Development Kit) files are also contained in this SDK [here](/examples/Rapid%20Development%20Kit).
 
+Here’s a simplest **complete** Arduino sketch that connects to LTE-M Network and sends `Hello World!` to AllThingsTalk Platform:
+
+```cpp
+#include <AllThingsTalk_LTEM.h>
+APICredentials credentials("api.allthingstalk.io", "Your-Device-Token", "Your-Device-ID");
+AllThingsTalk_LTEM att(Serial1, credentials, "Your-APN");
+CborPayload payload;
+void setup() { att.init(); payload.set("StringSensorAsset", "Hello World!"); att.send(payload); }
+void loop() { }
+```
+
+That’s how easy it is!  
+If you're having issues, [check the troubleshooting section](#troubleshooting-and-notes).
+
+> [AllThingsTalk](https://www.allthingstalk.com) is an accessible IoT Platform for rapid development.  
+In the blink of an eye, you'll be able to extract, visualize and use the collected data.  
+[Get started and connect up to 10 devices free-of-charge](https://www.allthingstalk.com/maker)
+
 
 # Table of Contents
 <!--ts-->  
@@ -45,8 +63,8 @@ This SDK has been tested and works on the hardware listed below:
 - [SARA-R410M](https://www.u-blox.com/en/product/sara-r4-series)
 
 ### Development Boards
-- [Sodaq AFF](https://support.sodaq.com/Boards/Sara_AFF/)
-- [Sodaq SFF](https://support.sodaq.com/Boards/Sara_SFF/)
+- [Sodaq SARA AFF](https://support.sodaq.com/Boards/Sara_AFF/)
+- [Sodaq SARA SFF](https://support.sodaq.com/Boards/Sara_SFF/)
 
 ## Installation
 This SDK is available on Arduino Library Manager. To install it:
@@ -160,31 +178,21 @@ You can send data to AllThingsTalk in 3 different ways using the library.
 [Read about JSON in our Documentation](https://docs.allthingstalk.com/developers/data-formats/#json)  
 JSON is a lightweight data-interchange format which is easy for humans to read and write and easy for machines to parse. It’s widely adopted on the web.
 
-You’ll need to create a `JsonPayload` object before being able to send data using CBOR.  
-The beginning of your sketch should therefore contain `JsonPayload payload`.
+> This is the quickest and simplest way of sending data, but uses a tiny bit more bandwidth and battery.
+
+> When using JSON to send data, the message is sent immediately upon execution.  
+
+Use the following method to send a JSON message:
 
 ```cpp
-#include <AllThingsTalk_LTEM.h>
-JsonPayload payload;
+att.send("asset_name", value);
 ```
 
-Use the following methods to send a JSON message:
+- `asset_name` is the name of asset on your AllThingsTalk Maker.  
+  This argument is of type `char*`, in case you’re defining it as a variable.
+- `value` is the data that’ll be sent to the specified asset. It can be of any type.
+- `att.send()` returns boolean **true** or **false** depending on if the message went through or not.
 
-> **Important:** You can only send 1 message at a time using JsonPayload. Message is reset when either `payload.reset()` or `att.send(payload)` are called.
-
-```cpp
-payload.reset(); // Resets the payload buffer
-payload.set("asset_name", value); // Sets a message in buffer
-att.send(payload); // Sends messages to AllThingsTalk
-```
-
-- `payload.reset()` clears the message queue, so you’re sure what you’re about to send is the only thing that’s going to be sent.  
-- `payload.set("asset_name", value)` adds a message to queue. 
-	You can add as many messages (payloads) as you like before actually sending them to AllThingsTalk.
-    -  `asset_name` is the name of asset on your AllThingsTalk Maker.  
-       This argument is of type `char*`, in case you’re defining it as a variable.
-    -  `value` is the data you want to send. It can be of any type.
-- `att.send(payload)` Sends the payload and returns boolean **true** or **false** depending on if the message went through or not.
 
 ## CBOR
 
@@ -192,7 +200,9 @@ att.send(payload); // Sends messages to AllThingsTalk
 [Read more about CBOR in our Documentation](https://docs.allthingstalk.com/developers/data-formats/#cbor)  
 CBOR is a data format whose design goals include the possibility of extremely small code size, fairly small message size, and extensibility without the need for version negotiation.  
 
-> This method uses less data. Use it if you’re working with limited data or bandwidth.
+> This method uses less data. Use it if you’re working with limited data or bandwidth.  
+
+> As opposed to JSON data sending, with CBOR, you can build a payload with multiple messages before sending them.
 
 You’ll need to create a `CborPayload` object before being able to send data using CBOR.  
 The beginning of your sketch should therefore contain `CborPayload payload`.
@@ -220,6 +230,7 @@ att.send(payload);
 - `att.send(payload)` Sends the payload and returns boolean **true** or **false** depending on if the message went through or not.
     
 # Receiving data
+
 ## Actuation Callbacks
 
 Actuation Callbacks call your functions once a message arrives from your AllThingsTalk Maker to your device on a specified asset.  
@@ -398,3 +409,5 @@ void setup() {
     | [Sodaq_MQTT](https://github.com/SodaqMoja/Sodaq_mqtt) (INCLUDED) | Handles MQTT communication |
     |  [Sodaq_R4X_MQTT](https://github.com/SodaqMoja/Sodaq_r4x_mqtt) (INCLUDED) | "Translator" library between Sodaq_R4X and Sodaq_MQTT |
     |  [Sodaq_WDT](https://github.com/SodaqMoja/Sodaq_wdt) (INCLUDED) | Sodaq's Watchdog library |
+
+- Sending `geoLocation` datatype is supported with [CBOR](#cbor) sending but **not** with [JSON](#json) Sending at the moment.
