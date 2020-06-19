@@ -39,7 +39,6 @@
  
 APICredentials credentials(SPACE_ENDPOINT, DEVICE_TOKEN, DEVICE_ID);
 AllThingsTalk_LTEM att(modemSerial, credentials, APN);
-CborPayload payload;
 
 void setup() {
   debugSerial.begin(115200);                            // Initialize the debug serial at 115200 baud rate
