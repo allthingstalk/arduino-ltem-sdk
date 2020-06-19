@@ -1,0 +1,28 @@
+# Syntax Coloring Map for AllThingsTalk LTE-M SDK
+
+# Datatypes (KEYWORD1)
+
+# Methods and Functions (KEYWORD2)
+debugPort	KEYWORD2
+init	KEYWORD2
+connect	KEYWORD2
+disconnect	KEYWORD2
+isConnected KEYWORD2
+send	KEYWORD2
+registerDevice  KEYWORD2
+sendSMS KEYWORD2
+getFirmwareVersion  KEYWORD2
+getFirmwareRevision KEYWORD2
+getIMEI KEYWORD2
+getIMSI KEYWORD2
+getICCID    KEYWORD2
+showDiagnosticInfo  KEYWORD2
+getOperator KEYWORD2
+setOperator KEYWORD2
+reboot  KEYWORD2
+loop	KEYWORD2
+setActuationCallback	KEYWORD2
+
+# Instances (KEYWORD2)
+
+# Constants (LITERAL1)
