@@ -229,12 +229,12 @@ bool AllThingsTalk_LTEM::sendSMS(char* number, char* message) {
 
 void AllThingsTalk_LTEM::showDiagnosticInfo() {
     if (justBooted) {
-        getFirmwareVersion();
-        getFirmwareRevision();
-        getIMEI();
+        getOperator();
         getICCID();
         getIMSI();
-        getOperator();
+        getIMEI();
+        getFirmwareVersion();
+        getFirmwareRevision();
         justBooted = false;
     }
 }
