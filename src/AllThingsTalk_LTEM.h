@@ -8,7 +8,6 @@
 #include "Sodaq_R4X_MQTT.h"
 #include "ArduinoJson.h"
 #include "CborPayload.h"
-#include "JsonPayload.h"
 #include "APICredentials.h"
 
 class ActuationCallback {

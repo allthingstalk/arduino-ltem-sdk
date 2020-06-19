@@ -35,11 +35,7 @@
 
 APICredentials credentials(SPACE_ENDPOINT, DEVICE_TOKEN, DEVICE_ID);
 AllThingsTalk_LTEM att(modemSerial, credentials, APN);
-// You can choose if you want to send payloads using "CborPayload" or "JsonPayload"
-// Check the README of this SDK to learn about the differences
 CborPayload payload;
-//JsonPayload payload;
-
 
 int sendInterval = 5; // Sending interval in seconds
 int counter = 1; // Initial value of counter (resets after reaching 10)
