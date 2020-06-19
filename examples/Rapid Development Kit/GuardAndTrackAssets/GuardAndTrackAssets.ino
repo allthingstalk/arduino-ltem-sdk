@@ -108,12 +108,18 @@ void sendData(bool shock = false) {
     if (shock) payload.set("shock", true);
     payload.set("loc", geoLocation);
     payload.set("accel", accel.getX());
+    debugSerial.print("Geolocation: ");
+    debugSerial.print(sodaq_gps.getLat());
+    debugSerial.print(", ");
+    debugSerial.println(sodaq_gps.getLon());
   } else {
     GeoLocation geoLocation(0, 0, 0); // Reset the GPS coordinates
     payload.reset();
     if (shock) payload.set("shock", true);
     payload.set("loc", geoLocation);
     payload.set("accel", accel.getX());
+    debugSerial.print("Geolocation: ");
+    debugSerial.println("0, 0");
   }
   if (att.send(payload)) { // Send the payload
     led.setLight(led.GREEN);
