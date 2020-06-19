@@ -1,7 +1,8 @@
 #include "AllThingsTalk_LTEM.h"
 
 #define URAT            SODAQ_R4X_LTEM_URAT
-#define MNOPROF         MNOProfiles::SIM_ICCID
+#define MNOPROF         MNOProfiles::STANDARD_EUROPE
+//#define MNOPROF         MNOProfiles::SIM_ICCID
 #define OPERATOR        AUTOMATIC_OPERATOR
 #define M1_BAND_MASK    BAND_MASK_UNCHANGED
 #define NB1_BAND_MASK   BAND_MASK_UNCHANGED
