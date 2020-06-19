@@ -195,16 +195,20 @@ bool AllThingsTalk_LTEM::send(CborPayload &payload) {
     }
 }
 
-bool AllThingsTalk_LTEM::send(JsonPayload &payload) {
+template<typename T> bool AllThingsTalk_LTEM::send(char *asset, T value) {
     if (isConnected()) {
         char topic[128];
-        snprintf(topic, sizeof topic, "%s%s%s%s%s", "device/", _credentials->getDeviceId(), "/asset/", payload.getAssetName(), "/state");
-        if (mqtt.publish(topic, payload.getBytes(), payload.getSize(), 0, 0)) {
+        snprintf(topic, sizeof topic, "%s%s%s%s%s", "device/", _credentials->getDeviceId(), "/asset/", asset, "/state");
+        DynamicJsonDocument doc(256);
+        char JSONmessageBuffer[256];
+        doc["value"] = value;
+        serializeJson(doc, JSONmessageBuffer);
+        if (mqtt.publish(topic, (unsigned char*)JSONmessageBuffer, strlen(JSONmessageBuffer), 0, 0)) {
             debug("> Message Published to AllThingsTalk (JSON)");
             debugVerbose("Asset:", ' ');
-            debugVerbose(payload.getAssetName(), ',');
+            debugVerbose(asset, ',');
             debugVerbose(" Value:", ' ');
-            debugVerbose(payload.getString());
+            debugVerbose(value);
             return true;
         } else {
             debug("> Failed to Publish Message to AllThingsTalk (JSON)");
@@ -212,6 +216,8 @@ bool AllThingsTalk_LTEM::send(JsonPayload &payload) {
         }
     }
 }
+
+
 
 bool AllThingsTalk_LTEM::registerDevice(const char* deviceSecret, const char* partnerId) {
   // TO BE IMPLEMENTED
@@ -541,3 +547,14 @@ void AllThingsTalk_LTEM::mqttCallback(const char* p_topic, const uint8_t *p_payl
         return;
     }
 }
+
+template bool AllThingsTalk_LTEM::send(char *asset, bool value);
+template bool AllThingsTalk_LTEM::send(char *asset, char *value);
+template bool AllThingsTalk_LTEM::send(char *asset, const char *value);
+template bool AllThingsTalk_LTEM::send(char *asset, String value);
+template bool AllThingsTalk_LTEM::send(char *asset, int value);
+template bool AllThingsTalk_LTEM::send(char *asset, byte value);
+template bool AllThingsTalk_LTEM::send(char *asset, short value);
+template bool AllThingsTalk_LTEM::send(char *asset, long value);
+template bool AllThingsTalk_LTEM::send(char *asset, float value);
+template bool AllThingsTalk_LTEM::send(char *asset, double value);

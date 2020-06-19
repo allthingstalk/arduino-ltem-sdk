@@ -36,7 +36,7 @@ public:
     bool disconnect();
     bool isConnected();
     bool send(CborPayload &payload);
-    bool send(JsonPayload &payload);
+    template<typename T> bool send(char *asset, T value);
     bool registerDevice(const char* deviceSecret, const char* partnerId);
     bool sendSMS(char* number, char* message);
     bool setOperator(const char* apn);
