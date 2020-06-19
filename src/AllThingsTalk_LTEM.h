@@ -76,6 +76,7 @@ private:
     char* _APN;
     int pingInterval = 30; // Seconds
     unsigned long previousPing;
+    bool intentionallyDisconnected;
 
     // Actuations / Callbacks
     static const int maximumActuations = 32;

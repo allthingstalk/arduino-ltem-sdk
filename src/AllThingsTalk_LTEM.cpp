@@ -105,7 +105,23 @@ bool AllThingsTalk_LTEM::init() {
     return connect();
 }
 
+bool AllThingsTalk_LTEM::disconnect() {
+    if (r4x.disconnect()) {
+        intentionallyDisconnected = true;
+        debug("Disconnected from LTE-M Network and AllThingsTalk");
+        return true;
+    } else {
+        debug("Failed to disconnect from the network");
+        return false;
+    }
+}
+
+bool AllThingsTalk_LTEM::isConnected() {
+    return r4x.isConnected();
+}
+
 bool AllThingsTalk_LTEM::connect() {
+    intentionallyDisconnected = false;
     if (connectNetwork() && connectMqtt()) {
         return true;
     } else {
@@ -157,9 +173,8 @@ bool AllThingsTalk_LTEM::connectMqtt() {
 }
 
 void AllThingsTalk_LTEM::maintainMqtt() {
-    if (callbackEnabled) { // Only maintain MQTT connection constantly if there's anything to wait for
+    if (callbackEnabled && !intentionallyDisconnected) { // Only maintain MQTT connection constantly if there's anything to wait for and if user didn't intentionally disconnect
         if (mqtt.loop()) return; // If something is received, skip the rest of the method this time (saves energy)
-
         if (millis() - previousPing >= pingInterval*1000) {
             if (!mqtt.ping()) {
                 connectMqtt(); // Establish an MQTT connection again if ping failed
@@ -170,56 +185,50 @@ void AllThingsTalk_LTEM::maintainMqtt() {
     }
 }
 
-bool AllThingsTalk_LTEM::disconnect() {
-    if (r4x.disconnect()) {
-        debug("Disconnected from LTE-M Network and AllThingsTalk");
-        return true;
-    } else {
-        debug("Failed to disconnect from the network");
-        return false;
-    }
-}
-
-bool AllThingsTalk_LTEM::isConnected() {
-    return r4x.isConnected();
-}
-
 bool AllThingsTalk_LTEM::send(CborPayload &payload) {
-    if (isConnected()) {
-        char* topic;
-        int length = strlen(_credentials->getDeviceId()) + 14;  // 14 fixed chars + deviceId
-        topic = new char[length];
-        sprintf(topic, "device/%s/state", _credentials->getDeviceId());
-        topic[length-1] = 0;
-        if (mqtt.publish(topic, payload.getBytes(), payload.getSize(), 0, 0)) {
-            debug("> Message Published to AllThingsTalk (CBOR)");
-            return true;
-        } else {
-            debug("> Failed to Publish Message to AllThingsTalk (CBOR)");
-            return false;
+    if (!intentionallyDisconnected) {
+        if (isConnected()) {
+            char* topic;
+            int length = strlen(_credentials->getDeviceId()) + 14;  // 14 fixed chars + deviceId
+            topic = new char[length];
+            sprintf(topic, "device/%s/state", _credentials->getDeviceId());
+            topic[length-1] = 0;
+            if (mqtt.publish(topic, payload.getBytes(), payload.getSize(), 0, 0)) {
+                debug("> Message Published to AllThingsTalk (CBOR)");
+                return true;
+            } else {
+                debug("> Failed to Publish Message to AllThingsTalk (CBOR)");
+                return false;
+            }
         }
+    } else {
+        debug("You're trying to send a message but you've disconnected from the network. Execute connect() to re-connect.");
     }
 }
 
 template<typename T> bool AllThingsTalk_LTEM::send(char *asset, T value) {
-    if (isConnected()) {
-        char topic[128];
-        snprintf(topic, sizeof topic, "%s%s%s%s%s", "device/", _credentials->getDeviceId(), "/asset/", asset, "/state");
-        DynamicJsonDocument doc(256);
-        char JSONmessageBuffer[256];
-        doc["value"] = value;
-        serializeJson(doc, JSONmessageBuffer);
-        if (mqtt.publish(topic, (unsigned char*)JSONmessageBuffer, strlen(JSONmessageBuffer), 0, 0)) {
-            debug("> Message Published to AllThingsTalk (JSON)");
-            debugVerbose("Asset:", ' ');
-            debugVerbose(asset, ',');
-            debugVerbose(" Value:", ' ');
-            debugVerbose(value);
-            return true;
-        } else {
-            debug("> Failed to Publish Message to AllThingsTalk (JSON)");
-            return false;
+    if (!intentionallyDisconnected) {
+        if (isConnected()) {
+            char topic[128];
+            snprintf(topic, sizeof topic, "%s%s%s%s%s", "device/", _credentials->getDeviceId(), "/asset/", asset, "/state");
+            DynamicJsonDocument doc(256);
+            char JSONmessageBuffer[256];
+            doc["value"] = value;
+            serializeJson(doc, JSONmessageBuffer);
+            if (mqtt.publish(topic, (unsigned char*)JSONmessageBuffer, strlen(JSONmessageBuffer), 0, 0)) {
+                debug("> Message Published to AllThingsTalk (JSON)");
+                debugVerbose("Asset:", ' ');
+                debugVerbose(asset, ',');
+                debugVerbose(" Value:", ' ');
+                debugVerbose(value);
+                return true;
+            } else {
+                debug("> Failed to Publish Message to AllThingsTalk (JSON)");
+                return false;
+            }
         }
+    } else {
+        debug("You're trying to send a message but you've disconnected from the network. Execute connect() to re-connect.");
     }
 }
 
