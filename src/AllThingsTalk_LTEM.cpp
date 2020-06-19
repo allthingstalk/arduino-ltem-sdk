@@ -106,7 +106,7 @@ bool AllThingsTalk_LTEM::init() {
 }
 
 bool AllThingsTalk_LTEM::disconnect() {
-    debug("Disconnecting from LTE-M and AllThingsTalk...")
+    debug("Disconnecting from LTE-M and AllThingsTalk...");
     if (r4x.disconnect()) {
         intentionallyDisconnected = true;
         debug("Successfully disconnected from LTE-M Network and AllThingsTalk");
