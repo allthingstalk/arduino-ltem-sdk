@@ -129,7 +129,7 @@ This will take care of connecting to LTE-M Network and AllThingsTalk.
 ## Connecting and Disconnecting
 
 Connection is automatically established once `init()` is executed.  
-However, if you wish to disconnect and/or connect from either WiFi or AllThingsTalk during device operation, you can do that by using these methods **anywhere** in your sketch:
+However, if you wish to disconnect and/or connect from either LTE-M or AllThingsTalk during device operation, you can do that by using these methods **anywhere** in your sketch:
 
 | **Method**                 | **Operation**                                                                 |
 | -------------------------- | ----------------------------------------------------------------------------- |
@@ -140,13 +140,13 @@ Example:
 
 ```cpp
 void setup() {
-  device.init();       // Initializes AllThingsTalk
+  att.init();       // Initializes AllThingsTalk
 }
 void loop() {
-  device.loop();       // Keeps LTE-M Network and AllThingsTalk connection alive (if active)
-  device.disconnect(); // Disconnects from both LTE-M and AllThingsTalk
+  att.loop();       // Keeps LTE-M Network and AllThingsTalk connection alive (if active)
+  att.disconnect(); // Disconnects from both LTE-M and AllThingsTalk
   delay(5000);         // Wait 5 seconds
-  device.connect();    // Connects to both LTE-M and AllThingsTalk
+  att.connect();    // Connects to both LTE-M and AllThingsTalk
 }
 ```
 
@@ -168,13 +168,14 @@ The beginning of your sketch should therefore contain `JsonPayload payload`.
 JsonPayload payload;
 ```
 
-Use the following methods to send a JSON message(s):
+Use the following methods to send a JSON message:
+
+> **Important:** You can only send 1 message at a time using JsonPayload. Message is reset when either `payload.reset()` or `att.send(payload)` are called.
 
 ```cpp
 payload.reset(); // Resets the payload buffer
 payload.set("asset_name", value); // Sets a message in buffer
-payload.set("asset_2_name", value2) // Sets another message in buffer
-att.send(payload); // Sends all messages to AllThingsTalk
+att.send(payload); // Sends messages to AllThingsTalk
 ```
 
 - `payload.reset()` clears the message queue, so you’re sure what you’re about to send is the only thing that’s going to be sent.  
