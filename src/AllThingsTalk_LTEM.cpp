@@ -171,7 +171,13 @@ void AllThingsTalk_LTEM::maintainMqtt() {
 }
 
 bool AllThingsTalk_LTEM::disconnect() {
-    return r4x.disconnect();
+    if (r4x.disconnect()) {
+        debug("Disconnected from LTE-M Network and AllThingsTalk");
+        return true;
+    } else {
+        debug("Failed to disconnect from the network");
+        return false;
+    }
 }
 
 bool AllThingsTalk_LTEM::isConnected() {
