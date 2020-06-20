@@ -58,6 +58,7 @@ void AllThingsTalk_LTEM::debugPort(Stream &debugSerial, bool verbose, bool verbo
     }
 }
 
+
 String AllThingsTalk_LTEM::generateUniqueID() {
     // This is unique to Arduino Zero/M0-like boards.
     // Most other Arduino boards don't possess a unique serial number.
@@ -106,6 +107,127 @@ bool AllThingsTalk_LTEM::init() {
     return connect();
 }
 
+// Start fading the Connection LED
+void AllThingsTalk_LTEM::connectionLedFadeStart() {
+    if (ledEnabled) {
+        supposedToFade = true;
+        if (!schedulerActive) {
+            Scheduler.startLoop(instance->connectionLedFade);
+            schedulerActive = true;
+        }
+    }
+}
+
+// Stop the Connection LED
+void AllThingsTalk_LTEM::connectionLedFadeStop() {
+    supposedToFade = false;
+    supposedToStop = true;
+    fadeOut = true;
+}
+
+// Actual logic for fading, fade-out and post-fade-out blinking of Connection LED
+void AllThingsTalk_LTEM::connectionLedFade() {
+    if (instance->ledEnabled) {
+        unsigned long thisMillis = millis();
+        if (instance->supposedToStop) {
+            if (thisMillis - instance->previousFadeOutMillis >= instance->fadeInterval && instance->fadeOut) {
+                instance->fadeValue = instance->fadeValue - instance->fadeIncrement;
+                if (instance->fadeValue <= instance->minPWM) {
+                    instance->fadeValue = instance->minPWM;
+                    instance->fadeDirection = UP;
+                    instance->fadeOutBlinkIteration = 0;
+                    instance->fadeOut = false;
+                    instance->fadeOutBlink = true;
+                    yield();
+                }
+                analogWrite(instance->connectionLedPin, instance->fadeValue);
+                instance->previousFadeOutMillis = thisMillis;
+                yield();
+            }
+            if (thisMillis - instance->previousFadeOutBlinkMillis >= instance->blinkInterval && instance->fadeOutBlink) {
+                switch(instance->fadeOutBlinkIteration) {
+                    case 0:
+                        instance->fadeValue = instance->minPWM;
+                        break;
+                    case 1:
+                        instance->fadeValue = instance->maxPWM;
+                        break;
+                    case 2:
+                        instance->fadeValue = instance->minPWM;
+                        break;
+                    case 3:
+                        instance->fadeValue = instance->maxPWM;
+                        break;
+                    case 4:
+                        instance->fadeValue = instance->minPWM;
+                        break;
+                    case 5:
+                        instance->fadeOutBlink = false;
+                        instance->supposedToStop = false;
+                        break;
+                }
+                analogWrite(instance->connectionLedPin, instance->fadeValue);
+                instance->fadeOutBlinkIteration++;
+                instance->previousFadeOutBlinkMillis = thisMillis;
+                yield();
+            }
+        }
+        if (instance->supposedToFade) {
+            if (thisMillis - instance->previousFadeMillis >= instance->fadeInterval) {
+                if (instance->fadeDirection == UP) {
+                    instance->fadeValue = instance->fadeValue + instance->fadeIncrement;
+                    if (instance->fadeValue >= instance->maxPWM) {
+                        instance->fadeValue = maxPWM;
+                        instance->fadeDirection = DOWN;
+                    }
+                    yield();
+                } else {
+                    instance->fadeValue = instance->fadeValue - instance->fadeIncrement;
+                    if (instance->fadeValue <= instance->minPWM) {
+                        instance->fadeValue = instance->minPWM;
+                        instance->fadeDirection = UP;
+                    }
+                    yield();
+                }
+                analogWrite(instance->connectionLedPin, instance->fadeValue);
+                instance->previousFadeMillis = thisMillis;
+                yield();
+            }
+            yield();
+        }
+        yield();
+    }
+    yield();
+}
+
+// Used to check if connectionLed is enabled or disabled
+bool AllThingsTalk_LTEM::connectionLed() {
+    if (ledEnabled) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+// Used to set connectionLed on/off
+bool AllThingsTalk_LTEM::connectionLed(bool state) {
+    ledEnabled = state;
+    return true;
+}
+
+// Used to set a custom pin for connectionLed
+bool AllThingsTalk_LTEM::connectionLed(int ledPin) {
+    connectionLedPin = ledPin;
+    return true;
+}
+
+// Used to set connectionLed on/off and custom pin in one go
+bool AllThingsTalk_LTEM::connectionLed(bool state, int ledPin) {
+    connectionLedPin = ledPin;
+    ledEnabled = state;
+    return true;
+}
+
 bool AllThingsTalk_LTEM::disconnect() {
     debug("Disconnecting from LTE-M and AllThingsTalk...");
     if (r4x.disconnect()) {
@@ -124,7 +246,9 @@ bool AllThingsTalk_LTEM::isConnected() {
 
 bool AllThingsTalk_LTEM::connect() {
     intentionallyDisconnected = false;
+    connectionLedFadeStart();
     if (connectNetwork() && connectMqtt()) {
+        connectionLedFadeStop();
         return true;
     } else {
         return false;

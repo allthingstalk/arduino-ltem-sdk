@@ -9,6 +9,7 @@
 #include "ArduinoJson.h"
 #include "CborPayload.h"
 #include "APICredentials.h"
+#include <Scheduler.h>
 
 class ActuationCallback {
 public:
@@ -47,6 +48,10 @@ public:
     char* getOperator();
     void reboot();
     void loop();
+    bool connectionLed(); // Use to check if connection LED is enabled
+    bool connectionLed(bool);
+    bool connectionLed(int ledPin);
+    bool connectionLed(bool state, int ledPin);
 
     // Callbacks (Receiving Data)
     bool setActuationCallback(String asset, void (*actuationCallback)(bool payload));
@@ -86,6 +91,31 @@ private:
     int actuationCallbackCount = 0;
     bool tryAddActuationCallback(String asset, void *actuationCallback, int actuationCallbackArgumentType);
     ActuationCallback *getActuationCallbackForAsset(String asset);
+
+    void connectionLedFadeStart();
+    void connectionLedFadeStop();
+    void connectionLedFade();
+    // Connection Signal LED Parameters
+    #define UP 1
+    #define DOWN 0
+    bool ledEnabled                  = true;    // Default state for Connection LED
+    int connectionLedPin             = LED_BUILTIN;
+    bool schedulerActive             = false;   // Keep track of scheduler
+    bool supposedToFade              = false;   // Know if Connection LED is supposed to fade
+    bool supposedToStop              = false;   // Keep track if fading is supposed to stop
+    bool fadeOut                     = false;   // Keep track if Connection LED is supposed to fade out
+    bool fadeOutBlink                = false;   // Keep track if Connection LED is supposed to blink after fading out
+    static const int minPWM          = 0;       // Minimum PWM
+    static const int maxPWM          = 255;     // Maximum PWM
+    static const byte fadeIncrement  = 3;       // How smooth to fade
+    static const int fadeInterval    = 10;      // Interval between fading steps
+    static const int blinkInterval   = 100;     // Milliseconds between blinks at the end of connection led fade-out
+    int fadeOutBlinkIteration        = 0;       // Keeps track of Connection LED blink iterations
+    byte fadeDirection               = UP;      // Keep track which way should the LED Fade
+    int fadeValue                    = 0;       // Keep track of current Connection LED brightness
+    unsigned long previousFadeMillis;           // millis() timing Variable, just for fading
+    unsigned long previousFadeOutMillis;        // Keeps track of time for fading out Connection LED
+    unsigned long previousFadeOutBlinkMillis;   // Keeps track of time for blinks after fading out the LED
 };
 
 #endif
