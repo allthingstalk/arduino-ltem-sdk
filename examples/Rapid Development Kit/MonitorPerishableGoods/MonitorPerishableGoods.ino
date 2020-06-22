@@ -41,8 +41,8 @@
 
 #include <AllThingsTalk_LTEM.h>
 #include <LED.h>
-#include "src/Adafruit_BME280.h"
-#include "src/Seeed_BME280.h"
+#include "Adafruit_BME280.h"
+#include "Seeed_BME280.h"
 #include "keys.h"
 
 #define debugSerial SerialUSB

@@ -46,9 +46,9 @@
 #include <AllThingsTalk_LTEM.h>
 #include <LED.h>
 #include <Wire.h>
-#include "src/TimeLib.h"
-#include "src/Sodaq_UBlox_GPS.h"
-#include "src/Sodaq_LSM303AGR.h"
+#include "TimeLib.h"
+#include "Sodaq_UBlox_GPS.h"
+#include "Sodaq_LSM303AGR.h"
 #include "keys.h"
 
 #define debugSerial SerialUSB

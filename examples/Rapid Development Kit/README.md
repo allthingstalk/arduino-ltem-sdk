@@ -2,7 +2,9 @@
 
 ## About
 
-The AllThingsTalk LTE-M RDK (Rapid Development Kit) for Arduino helps you to set your first steps in discovering LTE-M LPWAN technology. The RDK contains 3 carefully selected experiments which highlight the value of LTE-M LPWAN and the AllThingsTalk IoT Cloud.
+The AllThingsTalk LTE-M RDK (Rapid Development Kit) for Arduino helps you to set your first steps in discovering LTE-M LPWAN technology. The RDK contains 3 carefully selected experiments which highlight the value of LTE-M LPWAN and the AllThingsTalk IoT Cloud. 
+
+Every RDK sketch has its dependencies included inside its folder.
 
 ## Experiments
 ### Guard your high-value assets (**[GuardAssets](GuardAssets)**)
