@@ -2197,11 +2197,27 @@ bool Sodaq_R4X::checkCOPS(const char* requiredOperator, const char* requiredURAT
     }
 }
 
-bool Sodaq_R4X::checkProfile(const uint8_t requiredProfile)
+bool Sodaq_R4X::checkProfile(uint8_t requiredProfile)
 {
+    char buffer[64];
+    char firmwareBuffer[128];
+    if (getFirmwareRevision(firmwareBuffer, sizeof(firmwareBuffer))) {
+        String shortFirmwareBuffer(firmwareBuffer);
+        shortFirmwareBuffer = shortFirmwareBuffer.substring(0, 15);
+        if (shortFirmwareBuffer != "L0.0.00.00.05.06") {
+            requiredProfile = MNOProfiles::STANDARD_EUROPE;
+            if (readResponse(buffer, sizeof(buffer), "+UMNOPROF: ") != GSMResponseOK) {
+                return false;
+            }
+            println("AT+UCPSMS=0"); // Set powersave OFF (for newer boards)
+            if (readResponse() != GSMResponseOK) { // Check if powersave command is
+                return false;
+            }
+        }
+    }
+
     println("AT+UMNOPROF?");
 
-    char buffer[64];
     if (readResponse(buffer, sizeof(buffer), "+UMNOPROF: ") != GSMResponseOK) {
         return false;
     }

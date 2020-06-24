@@ -379,7 +379,7 @@ private:
     bool   checkBandMasks(const char* bandMaskLTE, const char* bandMaskNB);
     bool   checkCFUN();
     bool   checkCOPS(const char* requiredOperator, const char* requiredURAT);
-    bool   checkProfile(const uint8_t requiredProfile);
+    bool   checkProfile(uint8_t requiredProfile);
     bool   checkUrat(const char* requiredURAT);
     bool   checkURC(char* buffer);
     bool   doSIMcheck();
