@@ -202,6 +202,11 @@ bool Sodaq_R4X::connect(const char* apn, const char* uratSelect, uint8_t mnoProf
 
     purgeAllResponsesRead();
 
+    println("AT+CPSMS=0");
+    if (readResponse() != GSMResponseOK) {
+        return false;
+    }
+    
     if (!setVerboseErrors(true)) {
         return false;
     }
@@ -2203,16 +2208,9 @@ bool Sodaq_R4X::checkProfile(uint8_t requiredProfile)
     char firmwareBuffer[128];
     if (getFirmwareRevision(firmwareBuffer, sizeof(firmwareBuffer))) {
         String shortFirmwareBuffer(firmwareBuffer);
-        shortFirmwareBuffer = shortFirmwareBuffer.substring(0, 15);
+        shortFirmwareBuffer = shortFirmwareBuffer.substring(0, 16);
         if (shortFirmwareBuffer != "L0.0.00.00.05.06") {
             requiredProfile = MNOProfiles::STANDARD_EUROPE;
-            if (readResponse(buffer, sizeof(buffer), "+UMNOPROF: ") != GSMResponseOK) {
-                return false;
-            }
-            println("AT+UCPSMS=0"); // Set powersave OFF (for newer boards)
-            if (readResponse() != GSMResponseOK) { // Check if powersave command is
-                return false;
-            }
         }
     }
 
