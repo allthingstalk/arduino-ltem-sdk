@@ -202,6 +202,7 @@ bool AllThingsTalk_LTEM::send(CborPayload &payload) {
                 debug("> Failed to Publish Message to AllThingsTalk (CBOR)");
                 return false;
             }
+            delete topic;
         }
     } else {
         debug("You're trying to send a message but you've disconnected from the network. Execute connect() to re-connect.");

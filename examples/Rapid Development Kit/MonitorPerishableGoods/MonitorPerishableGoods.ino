@@ -55,7 +55,8 @@ Adafruit_BME280 tph1;
 BME280 tph2;
 LED led;
 
-unsigned long previousMillis;
+int publishInterval = 60; // Seconds between data publishing
+unsigned long previousPublishTime;
 float temperature, humidity;
 uint8_t sensorType;
 
@@ -110,24 +111,26 @@ void setSetupError(char* message) {
 
 void loop() {
   att.loop(); // Keep the network and connection to AllThingsTalk alive
-  led.setLight(led.YELLOW);
-  readTphData();
-  delay(1000);
-  led.setLight(led.OFF);
-  payload.reset();
-  payload.set("temp", temperature);
-  payload.set("hum", humidity);
-  debugSerial.print("Temperature: ");
-  debugSerial.println(temperature);
-  debugSerial.print("Humidity: ");
-  debugSerial.println(humidity);
-  led.setLight(led.WHITE);
-  if (att.send(payload)) {
-    led.setLight(led.GREEN, true);
-  } else {
-    led.setLight(led.RED, true);
+  if (millis() - previousPublishTime >= publishInterval*1000) {
+    led.setLight(led.YELLOW);
+    readTphData();
+    delay(1000);
+    led.setLight(led.OFF);
+    payload.reset();
+    payload.set("temp", temperature);
+    payload.set("hum", humidity);
+    debugSerial.print("Temperature: ");
+    debugSerial.println(temperature);
+    debugSerial.print("Humidity: ");
+    debugSerial.println(humidity);
+    led.setLight(led.WHITE);
+    if (att.send(payload)) {
+      led.setLight(led.GREEN, true);
+    } else {
+      led.setLight(led.RED, true);
+    }
+    delay(1000);
+    led.setLight(led.OFF);
+    previousPublishTime = millis();
   }
-  delay(1000);
-  led.setLight(led.OFF);
-  delay(30000);
 }
