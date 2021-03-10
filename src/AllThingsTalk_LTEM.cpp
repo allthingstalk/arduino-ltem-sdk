@@ -197,12 +197,13 @@ bool AllThingsTalk_LTEM::send(CborPayload &payload) {
             topic[length-1] = 0;
             if (mqtt.publish(topic, payload.getBytes(), payload.getSize(), 0, 0)) {
                 debug("> Message Published to AllThingsTalk (CBOR)");
+                delete topic;
                 return true;
             } else {
                 debug("> Failed to Publish Message to AllThingsTalk (CBOR)");
+                delete topic;
                 return false;
             }
-            delete topic;
         }
     } else {
         debug("You're trying to send a message but you've disconnected from the network. Execute connect() to re-connect.");
