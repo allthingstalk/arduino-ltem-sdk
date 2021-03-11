@@ -74,7 +74,7 @@ private:
     bool debugVerboseEnabled;
     bool isSubscribed;
     char* _APN;
-    int pingInterval = 30; // Seconds
+    int pingInterval = 25; // Seconds
     unsigned long previousPing;
     bool intentionallyDisconnected;
 
